@@ -186,7 +186,16 @@ desactivan).
 
 ## Créditos de las imágenes
 
-Las fotos proceden de la web actual del cliente (gimnasiosxtreme.es). Las
-portadas de las clases que no tenían foto y los retratos del equipo son piezas
-gráficas generadas con los colores de la marca, pensadas para sustituirse por
-fotos reales.
+**Todas las fotos son del propio gimnasio.** Vienen del reportaje profesional que
+el club publicó en su web en febrero de 2025 (36 fotos a 2560 px), más las fotos
+oficiales de Pilates y Body Balance. Nada de bancos de imágenes: la sala que se
+ve en cada ficha es la suya.
+
+Cada clase lleva la foto que de verdad la representa —la clase colectiva de
+golpeo en Cardio Box, los steps apilados en Gap-Step, los judokas en el tatami
+en Judo, la sala de ciclo en Ciclo indoor— y la galería es una selección de ese
+mismo reportaje.
+
+Lo único que sigue siendo material generado son **los retratos del equipo**:
+siluetas con los colores de la marca, pendientes de sustituir por las fotos
+reales de los monitores.
