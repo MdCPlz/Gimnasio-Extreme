@@ -444,7 +444,15 @@
     document.dispatchEvent(new CustomEvent('xt:cabecera'));
   }
 
+  /* El panel es una herramienta interna: no lleva cabecera, ni pie, ni aviso de
+     cookies (no pone ninguna de terceros), ni pide la nota de Google. Se marca
+     con <html data-herramienta> y aquí nos limitamos a lo imprescindible. */
+  function esHerramienta() {
+    return document.documentElement.hasAttribute('data-herramienta');
+  }
+
   function arrancaTarde() {
+    if (esHerramienta()) { montaApariciones(); return; }
     pintaPie();
     pintaGalletas();
     pintaMapas();

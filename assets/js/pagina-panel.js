@@ -337,16 +337,16 @@
           { r: 'hero.ctaSecundario.texto', e: 'Botón secundario', t: 'texto' },
           { r: 'hero.ctaSecundario.href', e: 'A dónde lleva', t: 'texto' }
         ] },
-        { titulo: 'Presentación al entrar', campos: [
-          { r: 'intro.activa', e: 'Mostrar la presentación por scroll', t: 'si-no',
-            ayuda: 'Se salta sola si el visitante ya la vio hoy o pide menos movimiento.' },
-          { r: 'intro.fotogramas.0.titulo', e: 'Pantalla 1 · título', t: 'texto' },
-          { r: 'intro.fotogramas.0.texto', e: 'Pantalla 1 · texto', t: 'texto' },
-          { r: 'intro.fotogramas.1.titulo', e: 'Pantalla 2 · título', t: 'texto' },
-          { r: 'intro.fotogramas.1.texto', e: 'Pantalla 2 · texto', t: 'texto' },
-          { r: 'intro.fotogramas.2.titulo', e: 'Pantalla 3 · título', t: 'texto' },
-          { r: 'intro.fotogramas.2.texto', e: 'Pantalla 3 · texto', t: 'texto' }
-        ] },
+        { titulo: 'Presentación al entrar', dobles: true, campos: function () {
+          var out = [{ r: 'intro.activa', e: 'Mostrar la presentación por scroll', t: 'si-no',
+            ancho: true,
+            ayuda: 'Se salta sola si el visitante ya la vio hoy o pide menos movimiento.' }];
+          (datos.intro.fotogramas || []).forEach(function (f, i) {
+            out.push({ r: 'intro.fotogramas.' + i + '.titulo', e: 'Pantalla ' + (i + 1) + ' · título', t: 'texto' });
+            out.push({ r: 'intro.fotogramas.' + i + '.texto', e: 'Pantalla ' + (i + 1) + ' · texto', t: 'texto' });
+          });
+          return out;
+        } },
         { titulo: 'Vídeo de fondo', campos: [
           { r: 'hero.video.activo', e: 'Usar vídeo de fondo', t: 'si-no',
             ayuda: 'Si el archivo no existe se queda la foto. Instrucciones en assets/video/LEEME.txt' }
@@ -551,7 +551,7 @@
   function pintaPanel() {
     hueco.innerHTML =
       '<div class="panel__barra">' +
-        '<div class="contenedor">' +
+        '<div class="contenedor contenedor--panel">' +
           '<div class="panel__marca">' +
             '<img src="' + esc(R(datos.marca.logo.claro)) + '" alt="" width="169" height="84">' +
             '<span>Panel</span>' +
@@ -565,7 +565,7 @@
         '</div>' +
       '</div>' +
 
-      '<div class="contenedor" style="padding-top:var(--e-6);padding-bottom:var(--e-9)">' +
+      '<div class="contenedor contenedor--panel" style="padding-top:var(--e-6);padding-bottom:var(--e-9)">' +
         '<div class="panel__cuerpo">' +
           '<nav class="panel__nav" id="pn-nav" aria-label="Secciones del panel"></nav>' +
           '<div id="pn-zona"></div>' +
@@ -780,7 +780,7 @@
         col.grupos.map(function (g) {
           return '<div class="detalle__grupo"><h4>' + esc(g.titulo) + '</h4>' +
             '<div class="detalle__campos' + (g.dobles ? ' detalle__campos--2' : '') + '">' +
-              g.campos.map(function (c) { return campo(c, base + '.' + c.c); }).join('') +
+              camposDe(g).map(function (c) { return campo(c, base + '.' + c.c); }).join('') +
             '</div></div>';
         }).join('') +
       '</div>' +
@@ -889,13 +889,17 @@
         bl.grupos.map(function (g) {
           return '<div class="detalle__grupo"><h4>' + esc(g.titulo) + '</h4>' +
             '<div class="detalle__campos' + (g.dobles ? ' detalle__campos--2' : '') + '">' +
-              g.campos.map(function (c) { return campo(c, c.r); }).join('') +
+              camposDe(g).map(function (c) { return campo(c, c.r); }).join('') +
             '</div></div>';
         }).join('') +
       '</div>';
   }
 
   /* ================================================================ CAMPOS */
+  function camposDe(g) {
+    return typeof g.campos === 'function' ? g.campos() : g.campos;
+  }
+
   function campo(def, ruta) {
     var v = lee(datos, ruta);
     var original = lee(B, ruta);

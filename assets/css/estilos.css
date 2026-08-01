@@ -1315,9 +1315,17 @@ hr { border: 0; border-top: 1px solid var(--borde); margin: var(--e-7) 0; }
 .panel__estado[data-sucio='true'] { color: var(--lima); }
 .panel__estado[data-sucio='true'] i { background: var(--lima); }
 
+/* Altura de la barra fija: de aquí cuelgan todos los `sticky` del panel. */
+:root { --panel-barra: 5.25rem; }
+
+/* El panel es una herramienta, no una página de lectura: no tiene por qué
+   respetar el ancho editorial de 78rem. Con el tope normal, las tres columnas
+   (lista, ficha y vista previa) no caben ni en una pantalla de 1440. */
+.contenedor--panel { max-width: 108rem; }
+
 .panel__cuerpo { display: grid; gap: var(--e-6); align-items: start; }
 @media (min-width: 62em) {
-  .panel__cuerpo { grid-template-columns: 14rem 1fr; gap: var(--e-7); }
+  .panel__cuerpo { grid-template-columns: 13rem minmax(0, 1fr); gap: var(--e-6); }
 }
 
 /* -------------------------------------------------------- navegación lateral */
@@ -1326,17 +1334,22 @@ hr { border: 0; border-top: 1px solid var(--borde); margin: var(--e-7) 0; }
   overflow-x: auto; scrollbar-width: thin;
   border-bottom: 1px solid var(--borde);
   padding-bottom: var(--e-2);
+  /* se difumina por la derecha para que se vea que hay más secciones */
+  -webkit-mask-image: linear-gradient(90deg, #000 88%, transparent);
+  mask-image: linear-gradient(90deg, #000 88%, transparent);
 }
 @media (min-width: 62em) {
   .panel__nav {
-    position: sticky; top: calc(var(--e-8) + var(--e-4));
+    position: sticky; top: var(--panel-barra);
     flex-direction: column; overflow: visible; border-bottom: 0; padding-bottom: 0;
+    -webkit-mask-image: none; mask-image: none;
   }
+  .panel__nav button { width: 100%; }
 }
 .panel__nav button {
   flex: none;
   display: flex; align-items: center; gap: var(--e-3);
-  width: 100%; min-height: 2.75rem;
+  width: auto; min-height: 2.75rem;
   padding: var(--e-2) var(--e-3);
   background: none; border: 0; border-radius: var(--radio);
   color: var(--texto-suave); cursor: pointer; text-align: left;
@@ -1360,15 +1373,28 @@ hr { border: 0; border-top: 1px solid var(--borde); margin: var(--e-7) 0; }
 .panel__titulo p { color: var(--texto-suave); font-size: var(--t--1); margin: 0; max-width: 62ch; }
 
 /* ------------------------------------------------------------ lista+detalle */
+/* Las rejillas del panel van anidadas unas dentro de otras, así que NO pueden
+   medirse contra la ventana: lo que importa es el hueco que le queda a cada una
+   después de la barra lateral y de la lista. De ahí las consultas de contenedor.
+   Con media queries pasaba que a 1440 px los campos acababan a 230 px. */
+#pn-zona { container-type: inline-size; container-name: zona; }
+
 .coleccion { display: grid; gap: var(--e-5); align-items: start; }
-@media (min-width: 76em) { .coleccion { grid-template-columns: 17rem 1fr; } }
+@container zona (min-width: 52rem) {
+  .coleccion { grid-template-columns: 16.5rem minmax(0, 1fr); }
+}
 
 .coleccion__lista {
   background: var(--superficie); border: 1px solid var(--borde);
   border-radius: var(--radio-g); padding: var(--e-2);
-  max-height: 32rem; overflow-y: auto;
+  max-height: 26rem; overflow-y: auto;
 }
-@media (min-width: 76em) { .coleccion__lista { position: sticky; top: 7rem; max-height: calc(100vh - 9rem); } }
+@container zona (min-width: 52rem) {
+  .coleccion__lista {
+    position: sticky; top: var(--panel-barra);
+    max-height: calc(100vh - var(--panel-barra) - 6rem);
+  }
+}
 
 .item {
   display: flex; align-items: center; gap: var(--e-3);
@@ -1380,24 +1406,24 @@ hr { border: 0; border-top: 1px solid var(--borde); margin: var(--e-7) 0; }
 .item:hover { background: var(--pizarra); }
 .item[aria-current='true'] { background: color-mix(in srgb, var(--lima) 14%, transparent); box-shadow: inset 2px 0 0 var(--lima); }
 .item__foto {
-  width: 2.75rem; height: 2.75rem; flex: none;
+  width: 2.25rem; height: 2.25rem; flex: none;
   border-radius: var(--radio); overflow: hidden; background: var(--pizarra);
   display: grid; place-items: center; color: var(--gris-claro);
 }
 .item__foto img { width: 100%; height: 100%; object-fit: cover; }
 .item__txt { min-width: 0; flex: 1; }
 .item__txt b {
-  display: block; font-family: var(--tipo-titulo); font-size: var(--t-0); font-weight: 700;
+  display: block; font-family: var(--tipo-titulo); font-size: 0.92rem; font-weight: 700;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .item__txt span {
-  display: block; font-size: var(--t--1); color: var(--texto-suave);
+  display: block; font-size: 0.76rem; color: var(--texto-suave);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .item__marca {
-  flex: none; font-size: 0.66rem; font-weight: 800; letter-spacing: 0.06em;
+  flex: none; font-size: 0.58rem; font-weight: 800; letter-spacing: 0.04em;
   text-transform: uppercase; font-family: var(--tipo-titulo);
-  padding: 0.12rem 0.4rem; border-radius: 3px;
+  padding: 0.1rem 0.3rem; border-radius: 3px;
   background: color-mix(in srgb, var(--lima) 18%, transparent); color: var(--lima);
 }
 .item__marca[data-tono='aviso'] { background: color-mix(in srgb, var(--alerta) 18%, transparent); color: var(--alerta); }
@@ -1409,12 +1435,20 @@ hr { border: 0; border-top: 1px solid var(--borde); margin: var(--e-7) 0; }
 .coleccion__acciones .boton { flex: 1 1 auto; }
 
 /* ------------------------------------------------------------------ detalle */
+#pn-detalle { container-type: inline-size; container-name: ficha; }
+
 .detalle { display: grid; gap: var(--e-5); align-items: start; }
-@media (min-width: 90em) { .detalle { grid-template-columns: 1fr 21rem; } }
+/* La vista previa sólo se pone al lado cuando queda sitio para las dos cosas;
+   si no, va debajo, con el ancho de una tarjeta y no estirada a toda la fila. */
+@container ficha (min-width: 47rem) {
+  .detalle { grid-template-columns: minmax(0, 1fr) 17rem; }
+}
 
 .detalle__caja {
   background: var(--superficie); border: 1px solid var(--borde);
   border-radius: var(--radio-g); padding: var(--e-5);
+  container-type: inline-size; container-name: caja;
+  min-width: 0;
 }
 .detalle__cabecera {
   display: flex; flex-wrap: wrap; align-items: center; gap: var(--e-3);
@@ -1430,14 +1464,20 @@ hr { border: 0; border-top: 1px solid var(--borde); margin: var(--e-7) 0; }
   padding-bottom: var(--e-2); border-bottom: 1px solid var(--borde);
 }
 .detalle__campos { display: grid; gap: var(--e-4); }
-@media (min-width: 52em) { .detalle__campos--2 { grid-template-columns: 1fr 1fr; } }
+/* Dos columnas sólo si cada una se queda por encima de ~19rem: por debajo de eso
+   un campo de texto no sirve para escribir. */
+@container caja (min-width: 36rem) {
+  .detalle__campos--2 { grid-template-columns: 1fr 1fr; }
+}
 .detalle__campos .ancho { grid-column: 1 / -1; }
 
 /* vista previa pegajosa */
 .vista {
-  position: sticky; top: 7rem;
+  position: sticky; top: var(--panel-barra);
   border: 1px dashed var(--borde); border-radius: var(--radio-g);
   padding: var(--e-4);
+  max-width: 22rem;      /* apilada, se queda con ancho de tarjeta */
+  justify-self: start;
 }
 .vista__titulo {
   display: flex; align-items: center; gap: var(--e-2);
@@ -1480,7 +1520,7 @@ hr { border: 0; border-top: 1px solid var(--borde); margin: var(--e-7) 0; }
 /* Zona de arrastre + miniatura. La foto se recorta y se convierte aquí mismo:
    el navegador sabe hacerlo con un canvas, así que no hace falta servidor. */
 .imagen {
-  display: grid; grid-template-columns: 5.5rem 1fr; gap: var(--e-4); align-items: start;
+  display: grid; grid-template-columns: 4.5rem minmax(0, 1fr); gap: var(--e-3); align-items: start;
   border: 1px dashed var(--borde); border-radius: var(--radio-g);
   padding: var(--e-3);
   transition: border-color var(--rapido) linear, background var(--rapido) linear;
@@ -1554,7 +1594,7 @@ hr { border: 0; border-top: 1px solid var(--borde); margin: var(--e-7) 0; }
 
 /* --------------------------------------------------------------- portada */
 .repaso { display: grid; gap: var(--e-4); }
-@media (min-width: 52em) { .repaso { grid-template-columns: repeat(2, 1fr); } }
+@container zona (min-width: 44rem) { .repaso { grid-template-columns: repeat(2, 1fr); } }
 .repaso__ficha {
   background: var(--superficie); border: 1px solid var(--borde);
   border-radius: var(--radio-g); padding: var(--e-5);
@@ -1580,12 +1620,22 @@ hr { border: 0; border-top: 1px solid var(--borde); margin: var(--e-7) 0; }
 }
 
 .numeros { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--e-4); }
-@media (min-width: 40em) { .numeros { grid-template-columns: repeat(4, 1fr); } }
+@container zona (min-width: 38rem) { .numeros { grid-template-columns: repeat(4, 1fr); } }
 .numero b {
   display: block; font-family: var(--tipo-titulo); font-size: var(--t-3);
   font-weight: 800; line-height: 1; color: var(--lima);
 }
 .numero span { display: block; font-size: var(--t--1); color: var(--texto-suave); margin-top: var(--e-1); }
+
+/* Navegadores sin consultas de contenedor: nos apoyamos en la ventana, que es
+   peor pero se acerca lo suficiente. */
+@supports not (container-type: inline-size) {
+  @media (min-width: 72em) { .coleccion { grid-template-columns: 16.5rem minmax(0, 1fr); } }
+  @media (min-width: 96em) { .detalle { grid-template-columns: minmax(0, 1fr) 17rem; } }
+  @media (min-width: 82em) { .detalle__campos--2 { grid-template-columns: 1fr 1fr; } }
+  @media (min-width: 52em) { .repaso { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 40em) { .numeros { grid-template-columns: repeat(4, 1fr); } }
+}
 
 /* --------------------------------------------------------------- publicar */
 .publicar {
