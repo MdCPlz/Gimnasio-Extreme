@@ -59,32 +59,83 @@
         '<div class="colectivos" data-anima>' +
           t.descuentosColectivo.map(function (d) {
             return '<div class="colectivo"><b>' + esc(d.nombre) + '</b>' +
-              '<span>−' + d.porcentaje + ' % sobre la cuota</span>' +
+              (d.porcentaje ? '<span>−' + d.porcentaje + ' % sobre la cuota</span>'
+                 : d.precioDesde ? '<span>desde ' + P.euros(d.precioDesde) + ' al mes</span>' : '') +
               '<p>' + esc(d.nota) + '</p></div>';
           }).join('') +
         '</div>' +
+
+        /* ------------------------------------------------- artes marciales */
+        (t.artesMarciales ?
+          '<div class="seccion__cabecera" style="margin-top:var(--e-9);margin-bottom:var(--e-5)" data-anima>' +
+            '<h3>' + esc(t.artesMarciales.titulo) + '</h3>' +
+            '<p style="font-size:var(--t-0)">' + esc(t.artesMarciales.texto) + '</p>' +
+          '</div>' +
+          '<div class="extras__lista" data-anima>' +
+            t.artesMarciales.cuotas.map(function (c) {
+              var centro = P.centroDe(c.centro);
+              return '<div class="extra">' +
+                '<span class="extra__nombre">' + esc(c.nombre) +
+                  (centro ? ' <small style="font-weight:400;color:var(--texto-suave)">· ' +
+                    esc(centro.nombre) + '</small>' : '') + '</span>' +
+                '<p class="extra__nota">' + esc(c.horario) + ' · ' + esc(c.edad) +
+                  (c.nota ? ' · ' + esc(c.nota) : '') +
+                  (c.matricula ? ' · Matrícula ' + P.euros(c.matricula) : ' · Sin matrícula') +
+                  '</p>' +
+                '<span class="extra__precio"><b>' + P.euros(c.precio) +
+                  '</b><small style="color:var(--texto-suave)">/mes</small></span>' +
+              '</div>';
+            }).join('') +
+          '</div>' +
+          '<p class="letra-pequena" data-anima>' + esc(t.artesMarciales.nota) + '</p>'
+        : '') +
+
+        /* ---------------------------------------------- judo en colegios */
+        (t.judoColegios ?
+          '<div class="seccion__cabecera" style="margin-top:var(--e-9);margin-bottom:var(--e-5)" data-anima>' +
+            '<h3>' + esc(t.judoColegios.titulo) + ' · ' + P.euros(t.judoColegios.precio) + ' al mes</h3>' +
+            '<p style="font-size:var(--t-0)">' + esc(t.judoColegios.texto) + '</p>' +
+          '</div>' +
+          '<div class="colectivos" data-anima>' +
+            t.judoColegios.colegios.map(function (c) {
+              return '<div class="colectivo"><b>' + esc(c.nombre) + '</b>' +
+                '<p>' + esc(c.horario) + '</p></div>';
+            }).join('') +
+          '</div>'
+        : '') +
       '</div>';
   }
 
   /* ----------------------------------------------------------------- dudas */
   var preguntas = [
     { p: '¿La cuota vale para los tres gimnasios?',
-      r: 'Sí. Una sola cuota abre los tres centros: el de la avenida del Cid Campeador, el de la ' +
-         'plaza Francisco Sarmiento y el de Valencia del Cid. Entra en el que quieras, las veces que quieras.' },
+      r: 'Sí. Una sola cuota abre los tres centros: el de la avenida del Cid Campeador (X1), el ' +
+         'de la plaza Francisco Sarmiento (X2) y el de Valencia del Cid (X3). Entra en el que ' +
+         'quieras, las veces que quieras.' },
     { p: '¿De verdad se puede entrar a las cuatro de la mañana?',
-      r: 'Sí. Los tres centros abren las 24 horas los 365 días del año. Fuera del horario de ' +
-         'recepción se entra con la tarjeta de socio.' },
-    { p: '¿Las clases dirigidas cuestan aparte?',
-      r: 'No. Las más de 40 clases semanales están incluidas en cualquier cuota. Sólo hay que ' +
-         'reservar plaza, porque las salas tienen aforo.' },
+      r: 'Sí. La cuota general da acceso ilimitado las 24 horas del día, todos los días del año. ' +
+         'Fuera del horario de recepción se entra con la llave de acceso, que cuesta 3 € una ' +
+         'sola vez. La cuota de 14 a 17 años es de 06:00 a 24:00.' },
+    { p: '¿Cuánto cuesta darse de alta?',
+      r: 'La cuota mensual lleva 3 € de tarifa de inscripción. La trimestral y la semestral no ' +
+         'llevan matrícula. Y si ya has sido socio y llevas menos de tres meses de baja, se te ' +
+         'descuenta en cuanto te identifiques.' },
     { p: '¿Hay permanencia?',
-      r: 'La cuota mensual no tiene permanencia: te das de baja cuando quieras. Las cuotas ' +
-         'trimestral, semestral y anual se pagan por adelantado y por eso salen más baratas.' },
-    { p: '¿Puedo congelar la cuota si me lesiono o me voy de viaje?',
-      r: 'Sí, a partir de la cuota trimestral. Son 15 días al año en la trimestral y 30 en la ' +
-         'semestral y la anual. Se pide en recepción.' },
-    { p: '¿Qué incluye la sauna?',
-      r: 'Está en los tres centros y entra en la cuota, sin coste extra ni reserva.' }
+      r: 'La mensual y la trimestral se renuevan solas y te das de baja cuando quieras. La ' +
+         'semestral es la excepción: no se puede interrumpir una vez empezada.' },
+    { p: '¿Las clases dirigidas cuestan aparte?',
+      r: 'No. Las más de 40 clases semanales, las salas de entrenamiento virtual y la sauna ' +
+         'están incluidas en cualquier cuota general. Sólo hay que reservar plaza, porque las ' +
+         'salas tienen aforo. Las artes marciales sí van con cuota propia.' },
+    { p: '¿Puedo probar antes de darme de alta?',
+      r: 'Sí. Hay entrada de día por 9 €, bono de 7 días por 21,90 € y bono de 15 días por ' +
+         '29,90 €. Los bonos incluyen la pulsera de acceso a los tres gimnasios y no cubren ' +
+         'las artes marciales.' },
+    { p: 'Somos varios en casa, ¿hay descuento?',
+      r: 'Sí. Cónyuges e hijos de 14 a 22 años: el primero paga su cuota completa y el resto ' +
+         'la mensual a mitad de precio. Hay que darse de alta todos y acreditar el parentesco ' +
+         'con el libro de familia o el documento de pareja de hecho desde el área privada. Las ' +
+         'artes marciales quedan fuera de este descuento.' }
   ];
 
   var d = $('#dudas');

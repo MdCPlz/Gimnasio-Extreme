@@ -42,21 +42,38 @@
   }
 
   /* ----------------------------------------------------------- plan de cuota */
+  /* El ahorro se calcula contra la cuota mensual real, no contra un «precio
+     antes» inventado: estas cuotas nunca han costado otra cosa. */
+  function ahorroFrenteAMensual(p) {
+    var mensual = (B.tarifas.planes || []).filter(function (x) { return x.id === 'mensual'; })[0];
+    if (!mensual || !p.alMes || p.id === 'mensual') return 0;
+    return Math.round((1 - p.alMes / mensual.precio) * 100);
+  }
+
   function plan(p, opciones) {
     var o = opciones || {};
-    var pc = P.descuento(p.precio, p.precioAntes);
+    /* si algún día hay una rebaja de verdad, `precioAntes` manda */
+    var pc = P.descuento(p.precio, p.precioAntes) || ahorroFrenteAMensual(p);
+    var conAntes = !!p.precioAntes;
+
     return '<article class="plan' + (p.destacado ? ' plan--destacado' : '') + '"' +
         (o.anima ? ' data-anima' : '') + '>' +
       (p.etiqueta ? '<span class="plan__etiqueta">' + esc(p.etiqueta) + '</span>' : '') +
-      (pc ? '<span class="plan__descuento">−' + pc + ' %</span>' : '') +
+      (pc ? '<span class="plan__descuento" title="' +
+        (conAntes ? 'Rebajado' : 'Frente a pagar mes a mes') + '">−' + pc + ' %</span>' : '') +
       '<h3>' + esc(p.nombre) + '</h3>' +
       '<div class="plan__precio">' +
         '<b>' + P.euros(p.precio) + '</b>' +
         '<i>' + esc(p.periodo) + '</i>' +
-        (p.precioAntes ? '<s class="plan__antes">' + P.euros(p.precioAntes) + '</s>' : '') +
+        (conAntes ? '<s class="plan__antes">' + P.euros(p.precioAntes) + '</s>' : '') +
       '</div>' +
+      (p.alMes && p.id !== 'mensual'
+        ? '<p class="plan__mes">' + P.euros(p.alMes) + ' al mes' +
+          (p.ahorroAlAno ? ' · ahorras ' + P.euros(p.ahorroAlAno) + ' al año' : '') + '</p>'
+        : '') +
       '<p class="plan__resumen">' + esc(p.resumen) + '</p>' +
       '<ul>' + (p.incluye || []).map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' +
+      (p.nota ? '<p class="plan__nota">' + esc(p.nota) + '</p>' : '') +
       '<a class="boton' + (p.destacado ? '' : ' boton--fantasma') + ' boton--ancho" ' +
         'href="' + esc(B.contacto.altaOnline) + '" target="_blank" rel="noopener noreferrer" ' +
         'data-mide="alta" data-plan="' + esc(p.id) + '">' + esc(p.cta) + '</a>' +

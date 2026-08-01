@@ -11,9 +11,9 @@ Está todo marcado con ⚠ dentro de `lib/manifest.js`. Resumido:
 
 | Qué | Estado | Dónde se cambia |
 |---|---|---|
-| **Precios de las cuotas** | ❗ **Provisionales.** Xtreme no publica sus precios en ningún sitio (ni en su web ni en su sistema de altas). Los importes son valores de mercado coherentes con un gimnasio 24 h de Burgos. | `tarifas.planes` y `tarifas.extras` |
+| **Precios de las cuotas** | ✅ **Reales.** Sacados del sistema de altas del club (`gimnasiosxtreme.provis.es` → INSCRIPCIÓN / ALTAS / TARIFAS) el 1 de agosto de 2026. Revísalos cada temporada. | `tarifas.planes` y `tarifas.extras` |
 | **Fichas de los monitores** | ❗ **De ejemplo.** La página de monitores del cliente está vacía. Alejandro, Susana y Diego son nombres reales citados en sus reseñas de Google; el resto de la ficha es relleno. | `equipo.miembros` |
-| **Cuadro de clases** | ❗ **Propuesta.** Coherente con «más de 40 clases a la semana», pero hay que pedirles el real. | `agenda.horario` |
+| **Cuadro de clases** | ⚠ **Mixto.** Las artes marciales llevan el horario real del club; el resto de clases dirigidas es una propuesta coherente con «más de 40 a la semana». Pide el cuadro completo. | `agenda.horario` |
 | **Correo de atención** | ⚠ El único correo público del club es el de empleo. Hay que confirmar cuál recibe los avisos. | `contacto.email` |
 | **Patrones de ocupación** | ⚠ Estimados. Se ajustan con los datos de los tornos. | `ocupacion.patron` |
 | **Coordenadas de los centros** | ⚠ Aproximadas a partir de la dirección postal. | `centros[].coords` |
@@ -23,7 +23,31 @@ Lo que **sí** es real y viene de ellos: las tres direcciones y teléfonos, la r
 social (Fitness Sarmiento S.L., NIF B09557158), las cifras de instalaciones
 (3.800 m², 120 máquinas, 100 puestos de cardio, 600 m² de peso libre, 6 salas),
 las clases con sus descripciones, las marcas de equipamiento, el modelo 3x1, el
-horario 24 h y el logotipo.
+horario 24 h, el logotipo y **todos los precios**.
+
+### Los precios, tal y como los cobra el club
+
+| Cuota | Precio | Al mes | Matrícula |
+|---|---|---|---|
+| Mensual | 39,90 € | 39,90 € | 3 € |
+| Trimestral | 113,00 € | 37,67 € | — |
+| Semestral (no interrumpible) | 205,00 € | 34,17 € | — |
+| Entrada de día | 9,00 € | — | Llave 3 € (pago único) |
+| Bono 7 días | 21,90 € | — | Incluye pulsera |
+| Bono 15 días | 29,90 € | — | Incluye pulsera |
+| Judo adultos / Kick Boxing / Krav Maga | 41,00 €/mes | — | 21 € (Krav Maga, sin matrícula) |
+| Judo infantil / Taekwondo | 34,00 €/mes | — | 21 € |
+| Judo en colegios | 26,00 €/mes | — | — |
+
+De 14 a 17 años: mismas cuotas, con acceso de 06:00 a 24:00 en vez de 24 horas.
+Descuento familiar: el primero paga completo y el resto la mensual al 50 %.
+
+**Un detalle deliberado:** las cuotas largas **no** llevan precio tachado, porque
+nunca han costado otra cosa. En su lugar se enseña el equivalente mensual y el
+ahorro real frente a pagar mes a mes (26,80 € al año la trimestral, 68,80 € la
+semestral). El porcentaje del distintivo se calcula sobre eso, no sobre un
+precio inventado. Si algún día el club rebaja de verdad una cuota, se rellena
+`precioAntes` y aparece el tachado.
 
 ---
 

@@ -125,8 +125,9 @@
     planes: {
       titulo: 'Cuotas',
       icono: 'tarjeta',
-      intro: 'Las cuotas de socio. Si rellenas «precio antes», el precio sale ' +
-             'tachado y la web calcula sola el porcentaje de descuento.',
+      intro: 'Las cuotas de socio, con los precios reales del sistema de altas del club. ' +
+             '«Al mes» y «ahorro» son lo que se enseña como argumento de venta; el ' +
+             'porcentaje se calcula solo frente a la cuota mensual.',
       ruta: 'tarifas.planes',
       nombre: function (p) { return p.nombre; },
       pie: function (p) {
@@ -148,9 +149,15 @@
         { titulo: 'Nombre y precio', dobles: true, campos: [
           { c: 'nombre', e: 'Nombre', t: 'texto' },
           { c: 'periodo', e: 'Periodo', t: 'texto', ayuda: 'Va pegado al precio: /mes, /3 meses…' },
-          { c: 'precio', e: 'Precio', t: 'precio' },
-          { c: 'precioAntes', e: 'Precio antes (para la oferta)', t: 'precio',
-            ayuda: 'Vacío = sin oferta. Con valor, sale tachado y con el −%.' },
+          { c: 'precio', e: 'Precio del periodo completo', t: 'precio' },
+          { c: 'alMes', e: 'Equivalente al mes', t: 'precio',
+            ayuda: 'Lo que sale por mes. Es el dato que más mira la gente.' },
+          { c: 'matricula', e: 'Tarifa de inscripción', t: 'precio',
+            ayuda: '0 = sin matrícula.' },
+          { c: 'ahorroAlAno', e: 'Ahorro al año', t: 'precio',
+            ayuda: 'Frente a pagar mes a mes. 0 = no se enseña.' },
+          { c: 'precioAntes', e: 'Precio antes (sólo si hay rebaja de verdad)', t: 'precio',
+            ayuda: 'Vacío salvo que el club baje el precio. Con valor, sale tachado.' },
           { c: 'etiqueta', e: 'Etiqueta', t: 'texto',
             ayuda: 'La pegatina de arriba: «La más elegida», «Mejor precio»… Vacío = sin pegatina.' },
           { c: 'destacado', e: 'Destacar con borde lima', t: 'si-no' }
@@ -159,6 +166,8 @@
           { c: 'resumen', e: 'Resumen', t: 'texto', ancho: true },
           { c: 'incluye', e: 'Ventajas', t: 'lista', ancho: true,
             ayuda: 'Una por línea. Cada una sale con su marca de verificación.' },
+          { c: 'nota', e: 'Letra pequeña de la cuota', t: 'texto', ancho: true,
+            ayuda: 'Por ejemplo: «Cuota no interrumpible».' },
           { c: 'cta', e: 'Texto del botón', t: 'texto' }
         ] }
       ]
@@ -465,8 +474,8 @@
 
   /* Lo que hay que confirmar antes de publicar. Cada uno sabe comprobarse solo. */
   var PENDIENTES = [
-    { id: 'precios', t: 'Confirmar los precios de las cuotas',
-      d: 'Xtreme no publica sus precios en ningún sitio: los de la web son de mercado.',
+    { id: 'precios', t: 'Revisar los precios de las cuotas',
+      d: 'Tomados del sistema de altas del club el 1 de agosto de 2026. Compruébalos cada temporada.',
       va: 'planes',
       hecho: function () { return !String(datos.tarifas.aviso || '').trim(); } },
     { id: 'equipo', t: 'Poner los monitores reales',
