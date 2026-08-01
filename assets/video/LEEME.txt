@@ -1,0 +1,38 @@
+VÍDEO DE FONDO DE LA PORTADA
+============================
+
+Aquí van dos archivos:
+
+    portada.mp4     (H.264, el que verá casi todo el mundo)
+    portada.webm    (VP9, más ligero, para navegadores que lo admitan)
+
+MIENTRAS NO ESTÉN, NO PASA NADA: la portada se queda con la foto de fondo
+(assets/img/hero-poster.webp) y se ve perfecta. El vídeo es un extra.
+
+CÓMO DEBE SER
+-------------
+· Entre 8 y 15 segundos, en bucle, sin corte visible al reiniciar.
+· SIN SONIDO (se reproduce en silencio; el audio sólo añade peso).
+· 1920×1080, movimiento suave y sin texto: encima va el titular.
+· Menos de 3 MB el mp4. Si pesa más, la portada tarda en ir fina.
+· Plano general de la sala, gente entrenando de espaldas o de lejos.
+  ⚠ Si se reconoce a alguien, hace falta su permiso por escrito.
+
+CÓMO CONVERTIRLO (con ffmpeg, gratis)
+-------------------------------------
+    ffmpeg -i original.mov -t 12 -an -vf "scale=1920:-2" \
+      -c:v libx264 -crf 26 -preset slow -movflags +faststart portada.mp4
+
+    ffmpeg -i original.mov -t 12 -an -vf "scale=1920:-2" \
+      -c:v libvpx-vp9 -crf 36 -b:v 0 portada.webm
+
+Y el fotograma que se usa como póster mientras carga:
+
+    ffmpeg -i portada.mp4 -ss 2 -frames:v 1 -q:v 2 poster.jpg
+
+CUÁNDO SE CARGA
+---------------
+El vídeo NO se descarga si: la pantalla mide menos de 900 px de ancho (móviles),
+el visitante tiene activado «reducir movimiento» o la conexión va justa.
+En esos casos se queda el póster. Se apaga del todo poniendo
+`hero.video.activo: false` en lib/manifest.js.
