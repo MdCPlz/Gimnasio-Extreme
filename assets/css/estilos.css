@@ -1820,8 +1820,12 @@ html.menu-abierto .cabecera__reservar { visibility: hidden; }
   background: var(--lima); color: var(--tinta);
   font-family: var(--tipo-titulo); font-weight: 800; font-size: var(--t--1);
 }
+/* número a la izquierda (ocupa las dos filas); título y explicación, siempre en la columna ancha */
+.receta li { row-gap: 0.2rem; }
+.receta li::before { grid-row: 1 / span 2; }
+.receta li > * { grid-column: 2; }
 .receta b { display: block; font-family: var(--tipo-titulo); font-size: var(--t-0); }
-.receta span { font-size: var(--t--1); color: var(--texto-suave); }
+.receta span { display: block; font-size: var(--t--1); color: var(--texto-suave); }
 .receta code {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em;
   background: var(--pizarra); padding: 0.1em 0.35em; border-radius: 3px; color: var(--lima);
