@@ -71,6 +71,31 @@
       e.setAttribute('data-sucio', 'true');
       e.querySelector('span').textContent = 'Web: cambios sin publicar';
     }
+    pintaCambios();
+  }
+
+  /* Barra fija de «cambios sin publicar»: aparece en cuanto se toca algo y
+     no se va hasta publicar o descartar. Así nunca se queda nada a medias. */
+  var ultimoAviso = 0;
+  function pintaCambios() {
+    var b = document.getElementById('pn-cambios');
+    if (!b) return;
+    var n = sucio ? cuentaCambios() : 0;
+    if (!n && sucio) { sucio = false; P.almacen.borra(CLAVE_BORRADOR); pintaEstado(); return; }
+    b.hidden = !n;
+    document.body.classList.toggle('p-con-cambios', !!n);
+    if (n) {
+      b.querySelector('[data-n]').textContent = n === 1 ? '1 cambio sin publicar' : n + ' cambios sin publicar';
+      /* pequeño latido la primera vez, para que se vea */
+      if (Date.now() - ultimoAviso > 60000) { ultimoAviso = Date.now(); b.classList.remove('p-late'); void b.offsetWidth; b.classList.add('p-late'); }
+    }
+  }
+  function descartaTodo() {
+    if (!confirm('¿Descartar los cambios sin publicar? La web se queda como está.')) return;
+    P.almacen.borra(CLAVE_BORRADOR);
+    datos = clona(B); sucio = false;
+    pintaEstado(); pintaNav(); pintaZona();
+    tostada('Cambios descartados. <b>Todo vuelve a estar como en la web.</b>');
   }
 
   /* =========================================================== EL ESQUEMA */
@@ -324,6 +349,11 @@
         '</div>' +
       '</div>' +
 
+      '<div class="p-cambios" id="pn-cambios" role="status" hidden>' +
+        '<span class="p-cambios__txt">' + icono('aviso', 16) + '<b data-n></b></span>' +
+        '<button class="boton boton--fantasma boton--pequeno" type="button" data-cambios="descartar">Descartar</button>' +
+        '<button class="boton boton--pequeno" type="button" data-cambios="publicar">' + icono('guardar', 15) + ' Publicar</button>' +
+      '</div>' +
       '<nav class="p-tabs" id="pn-tabs" aria-label="Secciones"></nav>' +
       dialogoPublicar();
 
@@ -331,6 +361,11 @@
       abrirVisor((window.__PANEL__ && window.__PANEL__.web) || R('/index.html'));
     });
     document.getElementById('pn-publicar').addEventListener('click', abrePublicar);
+    document.getElementById('pn-cambios').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-cambios]');
+      if (!b) return;
+      if (b.getAttribute('data-cambios') === 'publicar') abrePublicar(); else descartaTodo();
+    });
     document.getElementById('pn-salir').addEventListener('click', function () {
       if (sucio && !confirm('Tienes cambios de la web sin publicar. Se quedan guardados en este ' +
         'dispositivo. ¿Salir igualmente?')) return;
@@ -346,6 +381,7 @@
     montaPublicar();
     pintaNav();
     pintaZona();
+    pintaCambios();
 
     if (!pintaPanel.atajos) {
       pintaPanel.atajos = true;
@@ -485,7 +521,17 @@
     var porDia = [1, 2, 3, 4, 5, 6, 7].map(function (d) { return horario.filter(function (x) { return x.dia === d; }).length; });
     var tope = Math.max.apply(null, porDia.concat(1));
 
+    var guia = P.almacen.lee('xtreme.panel.guia', true) !== false;
     return titulo('Visión general', esc(P.mayus(P.fechaLarga(hoy))) + '. Cómo está la web ahora mismo.') +
+
+      (guia ? '<div class="p-guia">' +
+        '<button class="p-guia__cerrar" type="button" data-op="cerrar-guia" aria-label="Cerrar la guía">' + icono('cerrar', 16) + '</button>' +
+        '<h3>Así se usa, en tres pasos</h3>' +
+        '<ol>' +
+          '<li><b>Elige qué cambiar</b><span>Horarios, Actividades, Cuotas o Bonos, en el menú.</span></li>' +
+          '<li><b>Cámbialo</b><span>Se guarda solo en este móvil mientras editas. Si te equivocas, «deshacer» junto a cada campo.</span></li>' +
+          '<li><b>Pulsa Publicar</b><span>En un minuto está en la web. Si no te convence, en Publicación vuelves atrás.</span></li>' +
+        '</ol></div>' : '') +
 
       /* estado de la publicación */
       '<div class="p-estado-web"' + (sucio ? ' data-sucio="true"' : '') + '>' +
@@ -579,6 +625,7 @@
       if (!t) return;
       if (t.getAttribute('data-va')) { irA(t.getAttribute('data-va')); return; }
       if (t.getAttribute('data-op') === 'publicar') { abrePublicar(); return; }
+      if (t.getAttribute('data-op') === 'cerrar-guia') { P.almacen.guarda('xtreme.panel.guia', false); pintaZona(); return; }
       if (t.getAttribute('data-restaurar')) {
         if (sucio && !confirm('Tienes cambios sin publicar: se perderán. ¿Seguir?')) return;
         if (!confirm('¿Volver a publicar la web tal y como estaba en esta versión?')) return;
@@ -720,6 +767,7 @@
 
     return '<div class="detalle">' +
       '<div class="detalle__caja">' +
+        '<button class="p-volver-lista" type="button" data-volver-lista>' + icono('izquierda', 15) + ' Volver a la lista</button>' +
         '<div class="detalle__cabecera">' +
           '<h3>' + esc(col.nombre(item)) + '</h3>' +
           '<button class="boton boton--fantasma boton--pequeno" type="button" data-accion="subir"' +
@@ -774,6 +822,10 @@
     });
 
     z.addEventListener('click', function (e) {
+      if (e.target.closest('[data-volver-lista]')) {
+        document.getElementById('pn-lista').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
       var b = e.target.closest('[data-accion]');
       if (!b) return;
       var a = b.getAttribute('data-accion');
@@ -1339,6 +1391,7 @@
   }
 
   function pintaEstado() {
+    pintaCambios();
     var e = document.getElementById('pn-estado');
     if (!e) return;
     if (sucio) e.setAttribute('data-sucio', 'true'); else e.removeAttribute('data-sucio');

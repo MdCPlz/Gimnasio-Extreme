@@ -8,7 +8,7 @@ archivos y mete el contenido publicado.
 
 ## Lo primero: qué hay que confirmar antes de publicar
 
-Está todo marcado con ⚠ dentro de `lib/manifest.js` y en la sección **Repaso** del panel. Resumido:
+Está todo marcado con ⚠ dentro de `lib/manifest.js`. Resumido:
 
 | Qué | Estado | Dónde se cambia |
 |---|---|---|
@@ -68,20 +68,22 @@ la de RACHA ni la de la Casa). La estructura entera está en `supabase/esquema.s
 La web habla con ella por `lib/datos.js`; el panel, por `panel/gestion.js`.
 La conexión (dirección y clave **pública**) está en `lib/config.js`.
 
-> Con `lib/config.js` vacío la web funciona igual que antes, sin base: las
-> citas y los mensajes llegan solo por correo y las plazas de clase viven en el
-> dispositivo de cada socio. El panel, en cambio, necesita la base.
+> Con `lib/config.js` vacío la web funciona sin base: las citas llegan solo por
+> correo y las plazas de clase viven en el dispositivo de cada socio. El panel,
+> en cambio, necesita la base.
 
 ### Qué guarda la base de datos
 
 | Tabla | Qué es | Quién escribe |
 |---|---|---|
-| `citas` | Visitas, días de prueba, valoraciones… (reservar.html) | La web (función `crear_cita`) y el panel |
-| `inscripciones` | Plazas en clases dirigidas (horarios.html) | La web (`apuntarse`, `soltar_plaza`) y el panel |
-| `mensajes` | Formulario de contacto | La web (`enviar_mensaje`) |
 | `contenido` | Todo el manifiesto: clases, cuotas, horarios, textos… | Solo el panel (`publicar`) |
 | `versiones` | Las 30 últimas publicaciones, para volver atrás | Automático |
+| `citas` | Visitas, días de prueba, valoraciones… (reservar.html) | La web (`crear_cita`) |
+| `inscripciones` | Plazas en clases dirigidas (horarios.html) | La web (`apuntarse`, `soltar_plaza`) |
+| `sitio_privado` | El Deploy Hook de Vercel (secreto) | El panel, en Publicación |
 | `admins` | Correos con acceso al panel | A mano, en Supabase |
+
+El formulario de contacto no guarda nada: llega solo por correo.
 
 Sin sesión (la web) solo se ven huecos ocupados y plazas cogidas, **sin
 nombres**, y solo se puede crear. Las funciones comprueban en el servidor que la
@@ -89,7 +91,7 @@ hora esté dentro de las franjas, que la clase exista en el horario publicado y
 que quede aforo: no se puede reservar saltándose la web.
 
 Los correos de aviso (`api/`, con Resend) siguen funcionando igual; ahora son
-un extra: si fallan, la cita o el mensaje ya está guardado y sale en el panel.
+un extra: si fallan, la cita o la plaza ya están guardadas en la base.
 
 ### Publicar
 
@@ -143,44 +145,37 @@ node tools/servidor.js
 Web en http://localhost:8766/ y panel en http://localhost:8766/panel/.
 Para ver el panel **sin cuenta ni base de datos**, con datos de ejemplo:
 `node tools/generar-prueba.js` y abrir http://localhost:8766/tools/panel-prueba.html
-(en la consola, `__simulaWeb()` hace llegar una cita y un mensaje como desde la web).
 
 ---
 
 ## El panel
 
-Se entra con correo y contraseña. Está pensado también para el móvil y se puede
-instalar como app («Añadir a pantalla de inicio»).
+Para lo que el club cambia a menudo: **la hora de las clases, las actividades y
+los precios**. El resto de la web se cambia en `lib/manifest.js`.
 
-**Día a día** — lo que llega de la web aparece al momento, con aviso:
+Se entra con correo y contraseña. Está pensado para el móvil y se puede instalar
+como app («Añadir a pantalla de inicio»): pestañas abajo y «Publicar» siempre a la vista.
 
-- **Hoy** — citas de hoy, clases de hoy con su gente y mensajes sin leer.
-- **Citas** — próximas, de hoy, pasadas y canceladas, por centro. Cada una se
-  marca como atendida, no vino o cancelada (al cancelar, la hora vuelve a quedar
-  libre en la web). *Nueva cita* para las que llegan por teléfono o en recepción.
-- **Plazas en clases** — quién se ha apuntado a cada clase de las dos próximas
-  semanas, con el aforo, y un botón para liberar una plaza.
-- **Mensajes** — el formulario de contacto, con *Responder*.
+- **Visión general** — lo primero que se ve: si la web está al día o hay cambios
+  sin publicar, clases de la semana, cuota más barata, plazas, las clases de hoy
+  (con la siguiente marcada), clases por día y todos los precios. La primera vez
+  enseña una guía de tres pasos.
+- **Horarios** — un día cada vez (el de hoy al entrar). Se cambia la hora, la
+  clase, el centro, el monitor o las plazas; en el móvil cada clase es una tarjeta.
+- **Actividades, Cuotas y Bonos** — lista y ficha, con **la tarjeta real pintada
+  al lado mientras se escribe**. Añadir, duplicar, reordenar, eliminar, buscador y
+  «deshacer» en cada campo.
+- **Publicación** — el Deploy Hook de Vercel, el **historial** de las 30 últimas
+  publicaciones con «Volver a esta» y una copia descargable del contenido.
 
-**La web** — el editor de contenido de siempre:
+**Cambios sin publicar.** Todo lo que se toca se guarda como borrador en el
+dispositivo y aparece una barra fija «N cambios sin publicar · Descartar ·
+Publicar». Al publicar, se guarda en la base de datos y la web se reconstruye sola
+en un minuto.
 
-- **Repaso** — lo que falta por confirmar antes de salir a producción.
-- **Clases, Cuotas, Bonos, Horarios, Equipo, Centros, Galería, Reseñas** — lista
-  a la izquierda y ficha a la derecha, con **la tarjeta real pintada al lado
-  mientras escribes**. Se pueden añadir, duplicar, reordenar y eliminar.
-- **Ofertas, Portada, Horas punta, Contacto, SEO** — formularios normales.
-
-**Importar fotos.** En cualquier campo de imagen se arrastra una foto o se pulsa
-«Importar foto…». El panel la recorta al tamaño exacto de esa ficha, la convierte
-a WebP + JPG y **la sube sola** al almacén de fotos de Supabase. No hay que copiar
-nada a ningún sitio: sale en la web al publicar.
-
-**Publicar** (o Ctrl+S). Los cambios se guardan como borrador en el dispositivo
-mientras se edita; cada campo tocado tiene su «deshacer». Al publicar, se guardan
-en la base de datos y la web se reconstruye sola.
-
-**Publicación** — el Deploy Hook de Vercel, el **historial** de las 30 últimas
-publicaciones con «Volver a esta», y una copia descargable del contenido.
+**Fotos.** En cualquier campo de imagen se arrastra una foto o se pulsa
+«Importar foto…»: el panel la recorta al tamaño de esa ficha, la convierte a
+WebP + JPG y la sube sola al almacén de Supabase.
 
 ---
 
@@ -212,7 +207,7 @@ assets/video/         Aquí va el vídeo de la portada (ver LEEME.txt)
 api/                  Funciones de servidor (correo, nota de Google, ocupación)
 legal/                Aviso legal, privacidad y cookies
 
-panel/                El panel (se publica aparte, ver «Publicar»)
+panel/                El panel: horarios, actividades, cuotas y bonos (se publica aparte)
 supabase/esquema.sql  La base de datos entera: tablas, reglas y funciones
 tools/                Publicar, servidor local y prueba del panel. No se publica
 vercel.json           Cómo construye Vercel la web. No borrar

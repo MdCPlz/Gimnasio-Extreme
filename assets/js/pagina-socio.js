@@ -100,7 +100,7 @@
       '<div class="socio__cabecera">' +
         '<div class="socio__quien">' +
           '<span class="socio__avatar" aria-hidden="true">' + esc(S.iniciales(s.nombre)) + '</span>' +
-          '<div><b>Hola, ' + esc(s.nombre.split(' ')[0]) + '</b>' +
+          '<div><h1 class="socio__hola">Hola, ' + esc(s.nombre.split(' ')[0]) + '</h1>' +
             '<span>' + esc(s.email) + '</span></div>' +
         '</div>' +
         '<button class="boton boton--fantasma boton--pequeno" type="button" id="ac-salir">' +

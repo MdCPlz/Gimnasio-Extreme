@@ -402,3 +402,56 @@ html.p-visor-abierto, html.p-visor-abierto body { overflow: hidden; }
   .p-solo-movil { display: inline; }
   .p-cuadro-titulo { margin-bottom: 0; }
 }
+
+/* =============================================================================
+   CAMBIOS SIN PUBLICAR · GUÍA · VOLVER A LA LISTA
+   ========================================================================== */
+.p-cambios {
+  position: fixed; z-index: 45; left: 50%; bottom: var(--e-5); transform: translateX(-50%);
+  display: flex; align-items: center; gap: var(--e-3);
+  width: min(34rem, calc(100vw - 2 * var(--margen)));
+  padding: var(--e-2) var(--e-2) var(--e-2) var(--e-4);
+  background: var(--hueso); color: var(--tinta); border-radius: 999px; box-shadow: var(--sombra-alta);
+}
+.p-cambios[hidden] { display: none; }
+.p-cambios__txt { flex: 1; display: inline-flex; align-items: center; gap: var(--e-2); font-size: var(--t--1); min-width: 0; }
+.p-cambios__txt b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.p-cambios .boton--fantasma { color: var(--tinta); border-color: color-mix(in srgb, var(--tinta) 30%, transparent); }
+.p-cambios .boton { border-radius: 999px; }
+.p-cambios.p-late { animation: p-late 900ms var(--curva) 1; }
+@keyframes p-late { 30% { transform: translateX(-50%) scale(1.04); } }
+body.p-con-cambios #principal { padding-bottom: 5rem; }
+body.p-con-cambios .p-tostadas { bottom: calc(var(--e-5) + 4rem); }
+
+.p-guia {
+  position: relative; margin-bottom: var(--e-4); padding: var(--e-4) var(--e-5);
+  background: var(--superficie); border: 1px solid var(--borde); border-left: 3px solid var(--lima);
+  border-radius: var(--radio-g);
+}
+.p-guia h3 { font-size: var(--t-0); margin: 0 0 var(--e-3); padding-right: 2.5rem; }
+.p-guia ol { list-style: none; counter-reset: paso; margin: 0; padding: 0; display: grid; gap: var(--e-3); }
+@media (min-width: 64em) { .p-guia ol { grid-template-columns: repeat(3, 1fr); } }
+.p-guia li { counter-increment: paso; display: grid; grid-template-columns: 1.75rem 1fr; gap: 0.1rem var(--e-2); font-size: var(--t--1); }
+.p-guia li::before {
+  content: counter(paso); grid-row: 1 / span 2; width: 1.6rem; height: 1.6rem; border-radius: 50%;
+  display: grid; place-items: center; background: var(--lima); color: var(--tinta); font-weight: 800; font-size: 0.8rem;
+}
+.p-guia li span { color: var(--texto-suave); }
+.p-guia__cerrar {
+  position: absolute; top: var(--e-2); right: var(--e-2); width: 2.5rem; height: 2.5rem;
+  display: grid; place-items: center; background: none; border: 0; color: var(--texto-suave); cursor: pointer;
+}
+
+.p-volver-lista { display: none; }
+
+@media (max-width: 63.99em) {
+  .p-cambios { bottom: calc(4.9rem + env(safe-area-inset-bottom)); }
+  body.p-con-cambios #principal { padding-bottom: calc(12rem + env(safe-area-inset-bottom)); }
+  body.p-con-cambios .p-tostadas { bottom: calc(9rem + env(safe-area-inset-bottom)); }
+  .p-volver-lista {
+    display: inline-flex; align-items: center; gap: var(--e-2); margin-bottom: var(--e-3);
+    min-height: 2.5rem; padding: 0; background: none; border: 0; cursor: pointer;
+    font: inherit; font-size: var(--t--1); font-weight: 600; color: var(--lima);
+  }
+}
+@media (prefers-reduced-motion: reduce) { .p-cambios.p-late { animation: none; } }

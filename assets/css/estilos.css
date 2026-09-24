@@ -2009,3 +2009,25 @@ html.menu-abierto .cabecera__reservar { visibility: hidden; }
   .rejilla > .clase .clase__categoria { font-size: 0.6rem; padding: 0.2rem 0.45rem; top: var(--e-2); left: var(--e-2); }
   .rejilla > .clase .clase__lupa { width: 2rem; height: 2rem; top: var(--e-2); right: var(--e-2); }
 }
+
+
+/* =============================================================================
+   REMATE — tamaños mínimos para el dedo y para leer en el móvil
+   ========================================================================== */
+.socio__quien .socio__hola { display: block; margin: 0; font-family: var(--tipo-titulo); font-size: var(--t-1); font-weight: 700; line-height: 1.25; letter-spacing: 0; }
+.filtro { min-height: 2.5rem; }
+.clase__lupa { min-width: 2.25rem; min-height: 2.25rem; }
+@media (max-width: 63.99em) {
+  /* enlaces del pie: una fila cómoda para tocar cada uno */
+  .pie li { margin-bottom: 0; }
+  .pie ul a { display: inline-flex; align-items: center; min-height: 2.5rem; }
+  .pie__centro a { display: inline-flex; align-items: center; min-height: 2.5rem; }
+  .pie__legal nav a { display: inline-flex; align-items: center; min-height: 2.5rem; }
+  .pie__redes a { min-width: 2.75rem; min-height: 2.75rem; display: inline-grid; place-items: center; }
+  .enlace-flecha { min-height: 2.75rem; }
+  .agenda__dia small { font-size: 0.72rem; }
+  .calendario__rejilla abbr { font-size: 0.75rem; }
+  .plan__etiqueta { font-size: 0.75rem; }
+  .rejilla > .clase .clase__categoria { font-size: 0.68rem; }
+  .rejilla > .clase .clase__lupa { width: 2.25rem; height: 2.25rem; }
+}
