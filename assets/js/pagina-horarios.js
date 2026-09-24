@@ -33,12 +33,12 @@
       .sort(function (a, b) { return a.hora < b.hora ? -1 : 1; });
   }
 
-  /* Una clase deja de poder reservarse 30 minutos antes de empezar. */
+  /* Una clase se puede reservar hasta la hora a la que empieza. */
   function yaPaso(isoFecha, hora) {
     var f = P.deIso(isoFecha);
     var p = hora.split(':');
-    f.setHours(+p[0], +p[1] - 30, 0, 0);
-    return f < new Date();
+    f.setHours(+p[0], +p[1], 0, 0);
+    return f <= new Date();
   }
 
   function pinta() {

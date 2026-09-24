@@ -231,7 +231,7 @@ begin
     limit 1;
   if s is null then return jsonb_build_object('error', 'Esa clase ya no está en el horario.'); end if;
   if p_fecha > current_date + 14 then return jsonb_build_object('error', 'Solo se reserva con dos semanas de antelación.'); end if;
-  if (p_fecha + p_hora::time) < (now() at time zone 'Europe/Madrid') + interval '30 minutes' then
+  if (p_fecha + p_hora::time) <= (now() at time zone 'Europe/Madrid') then
     return jsonb_build_object('error', 'Esa clase ya ha empezado.');
   end if;
   if char_length(trim(coalesce(p_nombre, ''))) < 2 or char_length(p_nombre) > 120 then

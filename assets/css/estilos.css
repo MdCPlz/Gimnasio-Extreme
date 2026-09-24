@@ -411,40 +411,59 @@ html.menu-abierto .cabecera__reservar { visibility: hidden; }
   .menu[data-abierto='true'] nav a { animation: none; }
 }
 
-/* Pestañas del móvil (como las del panel): Inicio, Clases, Horarios, Cuotas
-   y Reservar, siempre a mano. En el móvil «Reservar» ya está aquí, así que la
-   cabecera se queda solo con el logotipo y el menú. */
+/* Menú inferior del móvil (como el del panel): Clases, Horarios, Reservar
+   en el centro, Cuotas y «Más», que abre el menú completo. Con él, la
+   cabecera se queda solo con el logotipo y el botón del menú. */
 .pestanas { display: none; }
 @media (max-width: 63.99em) {
   .pestanas {
-    position: fixed; z-index: 88; left: 0; right: 0; bottom: 0;
-    display: grid; grid-template-columns: repeat(5, 1fr);
-    padding: 0.35rem 0.25rem max(0.35rem, env(safe-area-inset-bottom));
-    background: color-mix(in srgb, var(--tinta) 94%, transparent);
+    position: fixed; z-index: 91; left: 0; right: 0; bottom: 0;
+    display: grid; grid-template-columns: repeat(5, 1fr); align-items: end;
+    padding: 0.4rem 0.25rem max(0.4rem, env(safe-area-inset-bottom));
+    background: color-mix(in srgb, var(--tinta) 95%, transparent);
     backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
     border-top: 1px solid var(--borde);
-    transition: transform var(--medio) var(--curva);
   }
-  .pestanas a {
-    display: grid; justify-items: center; gap: 0.2rem; padding: 0.25rem 0.1rem;
+  .pestanas a, .pestanas button {
+    display: grid; justify-items: center; gap: 0.2rem; padding: 0.2rem 0.1rem;
+    background: none; border: 0; font: inherit; cursor: pointer;
     font-size: 0.7rem; font-weight: 600; color: var(--texto-suave); text-decoration: none;
     -webkit-tap-highlight-color: transparent;
   }
-  .pestanas a span {
+  .pestanas a > span, .pestanas button > span {
     display: grid; place-items: center; width: 3.1rem; height: 1.9rem; border-radius: 999px;
-    transition: background var(--rapido) linear;
+    transition: background var(--rapido) linear, color var(--rapido) linear;
   }
-  .pestanas a[aria-current='page'] { color: var(--hueso); }
-  .pestanas a[aria-current='page'] span { background: var(--pizarra); color: var(--lima); }
-  .pestanas__destacada { color: var(--lima) !important; }
-  .pestanas__destacada span { background: var(--lima); color: var(--tinta); }
-  .pestanas a.pestanas__destacada[aria-current='page'] span { background: var(--lima); color: var(--tinta); }
-  body.con-pestanas { padding-bottom: calc(4.4rem + env(safe-area-inset-bottom)); }
-  body.con-pestanas .galletas { bottom: calc(4.9rem + env(safe-area-inset-bottom)); }
+  .pestanas a[aria-current='page'], .pestanas button[data-actual='true'], .pestanas button[aria-expanded='true'] { color: var(--hueso); }
+  .pestanas a[aria-current='page'] > span,
+  .pestanas button[data-actual='true'] > span,
+  .pestanas button[aria-expanded='true'] > span { background: var(--pizarra); color: var(--lima); }
+
+  /* Reservar: botón redondo en el centro, un poco por encima de la barra */
+  .pestanas a.pestanas__destacada { color: var(--lima); }
+  .pestanas a.pestanas__destacada > span {
+    width: 3.4rem; height: 3.4rem; margin-top: -1.4rem;
+    background: var(--lima); color: var(--tinta);
+    box-shadow: 0 0 0 4px var(--tinta), 0 8px 20px -6px color-mix(in srgb, var(--lima) 55%, transparent);
+  }
+  .pestanas a.pestanas__destacada[aria-current='page'] > span { background: var(--lima); color: var(--tinta); }
+
+  /* «Más»: tres rayas que se convierten en X con el menú abierto */
+  .pestanas__mas > span { display: flex !important; flex-direction: column; justify-content: center; align-items: center; gap: 4px; }
+  .pestanas__mas i { display: block; width: 18px; height: 2px; border-radius: 2px; background: currentColor;
+    transition: transform var(--medio) var(--curva), opacity var(--rapido) linear; }
+  .pestanas__mas[aria-expanded='true'] i:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+  .pestanas__mas[aria-expanded='true'] i:nth-child(2) { opacity: 0; }
+  .pestanas__mas[aria-expanded='true'] i:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+
+  body.con-pestanas { padding-bottom: calc(4.6rem + env(safe-area-inset-bottom)); }
+  body.con-pestanas .galletas { bottom: calc(5.2rem + env(safe-area-inset-bottom)); }
   body.con-pestanas .galletas:not([data-visible="true"]) { transform: translateY(calc(100% + 7rem + env(safe-area-inset-bottom))); }
   body.con-pestanas .cabecera .cabecera__reservar { display: none; }
-  html.menu-abierto .pestanas { transform: translateY(100%); }
+  /* con el menú abierto, la barra sigue a la vista (con «Más» en X) y el menú deja sitio */
+  body.con-pestanas .menu { padding-bottom: calc(5.5rem + env(safe-area-inset-bottom)); }
 }
+@media (prefers-reduced-motion: reduce) { .pestanas__mas i { transition: none; } }
 
 /* ------------------------------------------------- intro cinematográfica */
 .intro {

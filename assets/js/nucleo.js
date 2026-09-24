@@ -105,26 +105,32 @@
     montaScrollCabecera();
   }
 
-  /* Móvil: lo que más se busca, siempre a mano abajo, como en el panel.
-     «Reservar» va destacada; el resto de secciones sigue en el menú. */
+  /* Móvil: menú inferior, como en el panel. Lo que más se busca siempre a
+     mano; «Reservar» en el centro y más grande; «Más» abre el menú completo.
+     Al inicio se vuelve tocando el logotipo. */
   var PESTANAS = [
-    { href: '/index.html',    texto: 'Inicio',   i: 'fuego' },
     { href: '/clases.html',   texto: 'Clases',   i: 'pesa' },
     { href: '/horarios.html', texto: 'Horarios', i: 'reloj' },
-    { href: '/tarifas.html',  texto: 'Cuotas',   i: 'tarjeta' },
-    { href: '/reservar.html', texto: 'Reservar', i: 'calendario', destacada: true }
+    { href: '/reservar.html', texto: 'Reservar', i: 'calendario', destacada: true },
+    { href: '/tarifas.html',  texto: 'Cuotas',   i: 'tarjeta' }
   ];
   function pintaPestanas() {
     if ($('.pestanas')) return;
     document.body.classList.add('con-pestanas');
+    var enMenu = !PESTANAS.some(function (p) { return esActual(p.href); });
     document.body.insertAdjacentHTML('beforeend',
-      '<nav class="pestanas" aria-label="Accesos rápidos">' +
+      '<nav class="pestanas" aria-label="Menú inferior">' +
         PESTANAS.map(function (p) {
           return '<a href="' + esc(R(p.href)) + '"' + (esActual(p.href) ? ' aria-current="page"' : '') +
             (p.destacada ? ' class="pestanas__destacada"' : '') + '>' +
-            '<span>' + icono(p.i, 20) + '</span>' + esc(p.texto) + '</a>';
+            '<span>' + icono(p.i, p.destacada ? 24 : 20) + '</span>' + esc(p.texto) + '</a>';
         }).join('') +
+        '<button type="button" class="pestanas__mas" aria-controls="menu-movil" aria-expanded="false"' +
+          (enMenu ? ' data-actual="true"' : '') + '>' +
+          '<span><i></i><i></i><i></i></span>Más</button>' +
       '</nav>');
+    /* «Más» hace lo mismo que el botón del menú de arriba */
+    $('.pestanas__mas').addEventListener('click', function () { var h = $('.hamburguesa'); if (h) h.click(); });
   }
 
   function montaMenu() {
@@ -135,6 +141,8 @@
     function alterna(v) {
       abierto = v;
       boton.setAttribute('aria-expanded', String(v));
+      var mas = $('.pestanas__mas');
+      if (mas) mas.setAttribute('aria-expanded', String(v));
       boton.setAttribute('aria-label', v ? 'Cerrar el menú' : 'Abrir el menú');
       menu.setAttribute('data-abierto', String(v));
       if (v) { menu.removeAttribute('inert'); } else { menu.setAttribute('inert', ''); }
