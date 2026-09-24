@@ -75,6 +75,16 @@
 /* -------------------------------------------------------------------- base */
 *, *::before, *::after { box-sizing: border-box; }
 
+/* Nada se sale por los lados: ni se puede arrastrar la página en horizontal
+   ni rebota al deslizar (iPhone incluido). «clip» no rompe los elementos
+   fijos ni los «sticky»; «hidden» queda de respaldo para navegadores viejos. */
+html, body {
+  max-width: 100%;
+  overflow-x: hidden;
+  overflow-x: clip;
+  overscroll-behavior-x: none;
+}
+
 html {
   -webkit-text-size-adjust: 100%;
   scroll-behavior: smooth;
@@ -91,11 +101,13 @@ body {
   font-synthesis-weight: none;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  overflow-x: hidden;
 }
 
 /* Bloquea el scroll cuando hay un diálogo o el menú abierto */
 body.sin-scroll { overflow: hidden; }
+
+/* Campo trampa para robots: fuera de la vista, pero sin empujar la página */
+.trampa { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
 h1, h2, h3, h4, h5 {
   font-family: var(--tipo-titulo);

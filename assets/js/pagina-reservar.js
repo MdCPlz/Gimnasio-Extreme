@@ -79,7 +79,7 @@
             '<p class="campo__error" id="rv-rgpd-err">' + icono('aviso', 14) +
               '<span>Sin esto no podemos guardar tu cita.</span></p>' +
           '</div>' +
-          '<div style="position:absolute;left:-9999px" aria-hidden="true">' +
+          '<div class="trampa" aria-hidden="true">' +
             '<label for="rv-web">No rellenar</label>' +
             '<input type="text" id="rv-web" name="web" tabindex="-1" autocomplete="off"></div>' +
           '<button class="boton boton--ancho" type="submit" id="rv-enviar" disabled>' +

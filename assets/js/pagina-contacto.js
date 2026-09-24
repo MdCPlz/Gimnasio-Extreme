@@ -62,7 +62,7 @@
         '</div>' +
 
         /* trampa para robots: si viene rellena, no enviamos */
-        '<div style="position:absolute;left:-9999px" aria-hidden="true">' +
+        '<div class="trampa" aria-hidden="true">' +
           '<label for="fc-web">No rellenar</label>' +
           '<input type="text" id="fc-web" name="web" tabindex="-1" autocomplete="off"></div>' +
 
