@@ -100,8 +100,31 @@
         '</div>' +
       '</div>';
 
+    pintaPestanas();
     montaMenu();
     montaScrollCabecera();
+  }
+
+  /* Móvil: lo que más se busca, siempre a mano abajo, como en el panel.
+     «Reservar» va destacada; el resto de secciones sigue en el menú. */
+  var PESTANAS = [
+    { href: '/index.html',    texto: 'Inicio',   i: 'fuego' },
+    { href: '/clases.html',   texto: 'Clases',   i: 'pesa' },
+    { href: '/horarios.html', texto: 'Horarios', i: 'reloj' },
+    { href: '/tarifas.html',  texto: 'Cuotas',   i: 'tarjeta' },
+    { href: '/reservar.html', texto: 'Reservar', i: 'calendario', destacada: true }
+  ];
+  function pintaPestanas() {
+    if ($('.pestanas')) return;
+    document.body.classList.add('con-pestanas');
+    document.body.insertAdjacentHTML('beforeend',
+      '<nav class="pestanas" aria-label="Accesos rápidos">' +
+        PESTANAS.map(function (p) {
+          return '<a href="' + esc(R(p.href)) + '"' + (esActual(p.href) ? ' aria-current="page"' : '') +
+            (p.destacada ? ' class="pestanas__destacada"' : '') + '>' +
+            '<span>' + icono(p.i, 20) + '</span>' + esc(p.texto) + '</a>';
+        }).join('') +
+      '</nav>');
   }
 
   function montaMenu() {

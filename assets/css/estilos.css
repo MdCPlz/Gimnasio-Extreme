@@ -411,6 +411,41 @@ html.menu-abierto .cabecera__reservar { visibility: hidden; }
   .menu[data-abierto='true'] nav a { animation: none; }
 }
 
+/* Pestañas del móvil (como las del panel): Inicio, Clases, Horarios, Cuotas
+   y Reservar, siempre a mano. En el móvil «Reservar» ya está aquí, así que la
+   cabecera se queda solo con el logotipo y el menú. */
+.pestanas { display: none; }
+@media (max-width: 63.99em) {
+  .pestanas {
+    position: fixed; z-index: 88; left: 0; right: 0; bottom: 0;
+    display: grid; grid-template-columns: repeat(5, 1fr);
+    padding: 0.35rem 0.25rem max(0.35rem, env(safe-area-inset-bottom));
+    background: color-mix(in srgb, var(--tinta) 94%, transparent);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    border-top: 1px solid var(--borde);
+    transition: transform var(--medio) var(--curva);
+  }
+  .pestanas a {
+    display: grid; justify-items: center; gap: 0.2rem; padding: 0.25rem 0.1rem;
+    font-size: 0.7rem; font-weight: 600; color: var(--texto-suave); text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .pestanas a span {
+    display: grid; place-items: center; width: 3.1rem; height: 1.9rem; border-radius: 999px;
+    transition: background var(--rapido) linear;
+  }
+  .pestanas a[aria-current='page'] { color: var(--hueso); }
+  .pestanas a[aria-current='page'] span { background: var(--pizarra); color: var(--lima); }
+  .pestanas__destacada { color: var(--lima) !important; }
+  .pestanas__destacada span { background: var(--lima); color: var(--tinta); }
+  .pestanas a.pestanas__destacada[aria-current='page'] span { background: var(--lima); color: var(--tinta); }
+  body.con-pestanas { padding-bottom: calc(4.4rem + env(safe-area-inset-bottom)); }
+  body.con-pestanas .galletas { bottom: calc(4.9rem + env(safe-area-inset-bottom)); }
+  body.con-pestanas .galletas:not([data-visible="true"]) { transform: translateY(calc(100% + 7rem + env(safe-area-inset-bottom))); }
+  body.con-pestanas .cabecera .cabecera__reservar { display: none; }
+  html.menu-abierto .pestanas { transform: translateY(100%); }
+}
+
 /* ------------------------------------------------- intro cinematográfica */
 .intro {
   position: fixed; inset: 0; z-index: 120;
@@ -1056,6 +1091,19 @@ html.menu-abierto .cabecera__reservar { visibility: hidden; }
 .sesion .boton { grid-column: 1 / -1; }
 @media (min-width: 56em) { .sesion .boton { grid-column: auto; } }
 .sesion[data-reservada='true'] { background: color-mix(in srgb, var(--lima) 6%, transparent); }
+.sesion[data-pasada='true'] { opacity: 0.45; }
+.sesion__aviso { font-size: var(--t--1); color: var(--texto-suave); white-space: nowrap; }
+/* Móvil: hora a la izquierda, la clase y sus plazas en medio y el botón a la
+   derecha, a la altura del pulgar. Una clase = un bloque compacto. */
+@media (max-width: 55.99em) {
+  .sesion { grid-template-columns: 3.6rem minmax(0, 1fr) auto; gap: var(--e-1) var(--e-3); padding: var(--e-3) 0; }
+  .sesion__hora { grid-row: 1 / span 2; align-self: start; font-size: var(--t-0); padding-top: 0.15rem; }
+  .sesion__info { grid-column: 2; }
+  .sesion__info b { font-size: var(--t-0); }
+  .sesion__plazas { grid-column: 2; }
+  .sesion .boton, .sesion .sesion__aviso { grid-column: 3; grid-row: 1 / span 2; align-self: center; }
+  .sesion .boton { min-height: 2.75rem; }
+}
 
 /* ---------------------------------------------------------------- galería */
 .galeria {
@@ -1912,4 +1960,21 @@ html.menu-abierto .cabecera__reservar { visibility: hidden; }
   body { background: #fff; color: #000; }
   .seccion { padding-block: 1.5rem; }
   a[href^='http']::after { content: ' (' attr(href) ')'; font-size: 0.75em; color: #555; }
+}
+
+/* Clases a dos columnas en el móvil: tarjeta compacta (foto, nombre, resumen
+   y datos). El texto largo se queda para pantallas grandes. */
+@media (max-width: 47.99em) {
+  .rejilla:has(> .clase) { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--e-3); }
+  .rejilla > .clase .tarjeta__cuerpo { padding: var(--e-3); }
+  .rejilla > .clase h3 { font-size: var(--t-0); line-height: 1.2; margin-bottom: var(--e-1); }
+  .rejilla > .clase .clase__resumen {
+    font-size: 0.8rem; line-height: 1.35; margin-bottom: var(--e-2);
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .rejilla > .clase .clase__texto { display: none; }
+  .rejilla > .clase .clase__pie { gap: 0.3rem var(--e-2); font-size: 0.72rem; margin-top: auto; }
+  .rejilla > .clase .clase__pie > span:nth-child(2) { display: none; }   /* el nivel, en la ficha grande */
+  .rejilla > .clase .clase__categoria { font-size: 0.6rem; padding: 0.2rem 0.45rem; top: var(--e-2); left: var(--e-2); }
+  .rejilla > .clase .clase__lupa { width: 2rem; height: 2rem; top: var(--e-2); right: var(--e-2); }
 }

@@ -143,7 +143,7 @@
       boton = '<button class="boton boton--fantasma boton--pequeno" type="button" ' +
         'data-cancelar="' + esc(S.idDe(iso, s.hora, s.clase, s.centro)) + '">Cancelar</button>';
     } else if (pasada) {
-      boton = '<span class="letra-pequena" style="margin:0">Ya ha empezado</span>';
+      boton = '<span class="sesion__aviso">Empezada</span>';
     } else if (libres === 0) {
       boton = '<button class="boton boton--pequeno" type="button" disabled>Completa</button>';
     } else {
@@ -152,7 +152,8 @@
         '\'>Reservar</button>';
     }
 
-    return '<div class="sesion"' + (mia ? ' data-reservada="true"' : '') + '>' +
+    return '<div class="sesion"' + (mia ? ' data-reservada="true"' : '') +
+      (pasada && !mia ? ' data-pasada="true"' : '') + '>' +
       '<span class="sesion__hora">' + esc(s.hora) + '</span>' +
       '<div class="sesion__info">' +
         '<b>' + esc(c.nombre) + '</b>' +

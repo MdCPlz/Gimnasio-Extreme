@@ -63,7 +63,7 @@ datos de Supabase que comparten.
 | Web | https://gimnasios-xtreme.vercel.app (hasta que se apunte el dominio) |
 | Panel | https://panel-gimnasios-xtreme.vercel.app (privado, no indexado) |
 
-Base de datos: proyecto de Supabase **gimnasios-xtreme** (su propia cuenta, no
+Base de datos: proyecto de Supabase **gimnasios-xtreme** (id `desinsnxeopqaaayuiht`, París, cuenta «Xtreme»; no
 la de RACHA ni la de la Casa). La estructura entera está en `supabase/esquema.sql`.
 La web habla con ella por `lib/datos.js`; el panel, por `panel/gestion.js`.
 La conexión (dirección y clave **pública**) está en `lib/config.js`.
