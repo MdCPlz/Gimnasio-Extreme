@@ -9,7 +9,7 @@
 -- Se aplica una vez sobre un proyecto de Supabase vacío.
 -- ============================================================
 
-create extension if not exists pg_net;
+create extension if not exists pg_net with schema extensions;
 
 -- ---------- Quién administra ----------
 create table public.admins (
@@ -150,7 +150,7 @@ language sql stable security definer set search_path = public as $$
 $$;
 
 create or replace function public._correo_valido(p text)
-returns boolean language sql immutable as $$
+returns boolean language sql immutable set search_path = public as $$
   select coalesce(p, '') ~* '^[^@\s]+@[^@\s]+\.[a-z]{2,}$' and char_length(p) <= 200;
 $$;
 
