@@ -296,3 +296,109 @@ html.p-visor-abierto, html.p-visor-abierto body { overflow: hidden; }
 }
 /* «Publicar» con su texto también en el móvil: es la acción principal */
 .p-publicar { gap: var(--e-2); white-space: nowrap; }
+
+/* =============================================================================
+   VISIÓN GENERAL
+   ========================================================================== */
+.p-estado-web {
+  display: flex; align-items: center; gap: var(--e-3); flex-wrap: wrap;
+  padding: var(--e-4); margin-bottom: var(--e-4);
+  border: 1px solid color-mix(in srgb, var(--exito) 45%, transparent); border-radius: var(--radio-g);
+  background: color-mix(in srgb, var(--exito) 8%, transparent);
+}
+.p-estado-web[data-sucio='true'] {
+  border-color: color-mix(in srgb, var(--lima) 55%, transparent);
+  background: color-mix(in srgb, var(--lima) 8%, transparent);
+}
+.p-estado-web__ico { color: var(--exito); flex: none; display: grid; }
+.p-estado-web[data-sucio='true'] .p-estado-web__ico { color: var(--lima); }
+.p-estado-web > div { flex: 1; min-width: 12rem; display: grid; gap: 0.15rem; }
+.p-estado-web span { font-size: var(--t--1); color: var(--texto-suave); }
+
+.p-general { display: grid; gap: var(--e-4); margin-top: var(--e-4); }
+@media (min-width: 72em) { .p-general { grid-template-columns: 1.3fr 1fr 1fr; align-items: start; } }
+.p-caja-cab { display: flex; align-items: baseline; justify-content: space-between; gap: var(--e-3); margin-bottom: var(--e-3); }
+.p-caja-cab h3 { font-size: var(--t-1); margin: 0; }
+.p-enlace {
+  display: inline-flex; align-items: center; gap: 0.3rem; background: none; border: 0; padding: 0.35rem 0;
+  font: inherit; font-size: var(--t--1); font-weight: 600; color: var(--lima); cursor: pointer;
+}
+.p-ajustes { margin-top: var(--e-5); }
+
+.p-hoy { list-style: none; margin: 0; padding: 0; display: grid; }
+.p-hoy li {
+  display: grid; grid-template-columns: 3.2rem minmax(0, 1fr) auto; align-items: center; gap: var(--e-3);
+  padding: var(--e-2) 0; border-top: 1px solid var(--borde);
+}
+.p-hoy li > b { font-family: var(--tipo-titulo); font-variant-numeric: tabular-nums; }
+.p-hoy li span { display: grid; min-width: 0; }
+.p-hoy li small { color: var(--texto-suave); font-size: var(--t--1); }
+.p-hoy li[data-pasada='true'] { opacity: 0.45; }
+.p-hoy li[data-siguiente='true'] > b { color: var(--lima); }
+.p-hoy em {
+  font-style: normal; font-size: 0.7rem; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 999px;
+  background: var(--lima); color: var(--tinta);
+}
+
+.p-barras { display: grid; grid-template-columns: repeat(7, 1fr); gap: var(--e-2); height: 9rem; align-items: end; }
+.p-barras > div { display: grid; grid-template-rows: auto 1fr auto; justify-items: center; height: 100%; gap: 0.2rem; }
+.p-barras i { align-self: end; width: 100%; max-width: 2rem; min-height: 3px; border-radius: 4px 4px 0 0; background: var(--pizarra); }
+.p-barras em { font-style: normal; font-size: var(--t--1); font-weight: 600; }
+.p-barras span { font-size: 0.72rem; color: var(--texto-suave); }
+.p-barras [data-hoy='true'] i { background: var(--lima); }
+.p-barras [data-hoy='true'] span { color: var(--lima); font-weight: 700; }
+.p-centros { display: flex; flex-wrap: wrap; gap: var(--e-2) var(--e-4); margin-top: var(--e-4); font-size: var(--t--1); color: var(--texto-suave); }
+.p-centros b { color: var(--hueso); }
+
+.p-precios { list-style: none; margin: 0; padding: 0; }
+.p-precios li { display: flex; justify-content: space-between; gap: var(--e-3); padding: var(--e-2) 0; border-top: 1px solid var(--borde); font-size: var(--t--1); }
+.p-precios li b { font-variant-numeric: tabular-nums; }
+.p-precios__bono span { color: var(--texto-suave); }
+
+/* =============================================================================
+   HORARIOS — un día cada vez; en el móvil cada clase es una tarjeta
+   ========================================================================== */
+.p-dias { display: grid; grid-template-columns: repeat(7, 1fr) auto; gap: var(--e-2); margin-bottom: var(--e-4); }
+.p-dia-btn {
+  display: grid; justify-items: center; gap: 0.1rem; padding: 0.45rem 0.2rem; cursor: pointer;
+  background: var(--superficie); border: 1px solid var(--borde); border-radius: var(--radio-g);
+  color: var(--hueso); font: inherit;
+}
+.p-dia-btn b { font-family: var(--tipo-titulo); font-size: var(--t-0); }
+.p-dia-btn small { font-size: 0.7rem; color: var(--texto-suave); }
+.p-dia-btn--todo { padding-inline: var(--e-3); }
+.p-dia-btn[aria-pressed='true'] { background: var(--lima); border-color: var(--lima); color: var(--tinta); }
+.p-dia-btn[aria-pressed='true'] small { color: var(--tinta); }
+.p-cuadro-titulo { font-size: var(--t-1); margin: 0 0 var(--e-3); }
+
+.p-cuadro { width: 100%; border-collapse: collapse; font-size: var(--t--1); }
+.p-cuadro th {
+  text-align: left; padding: var(--e-2); border-bottom: 1px solid var(--borde);
+  font-family: var(--tipo-titulo); color: var(--lima); font-size: 0.7rem; letter-spacing: .08em; text-transform: uppercase;
+}
+.p-cuadro td { padding: var(--e-2); border-bottom: 1px solid var(--borde); vertical-align: middle; }
+.p-cuadro .selector { width: 100%; min-width: 0; }
+.p-c-hora { width: 7.5rem; } .p-c-plazas { width: 5.5rem; } .p-c-quitar { width: 3rem; }
+.p-solo-movil { display: none; }
+
+@media (max-width: 63.99em) {
+  .p-dias { grid-template-columns: repeat(7, 1fr); }
+  .p-dia-btn--todo { grid-column: 1 / -1; grid-auto-flow: column; justify-content: center; gap: var(--e-2); }
+  .p-cuadro thead { display: none; }
+  .p-cuadro, .p-cuadro tbody { display: block; }
+  .p-cuadro tr {
+    display: grid; grid-template-columns: 1fr 1fr; gap: var(--e-2) var(--e-3);
+    padding: var(--e-3) 0; border-bottom: 1px solid var(--borde);
+  }
+  .p-cuadro td { display: grid; gap: 0.2rem; padding: 0; border: 0; width: auto; }
+  .p-cuadro td[data-et]::before {
+    content: attr(data-et); font-size: 0.68rem; font-weight: 600; letter-spacing: .06em;
+    text-transform: uppercase; color: var(--gris-claro);
+  }
+  .p-cuadro .selector { min-height: 2.75rem; font-size: 16px; }   /* 16 px: iOS no hace zoom al tocar */
+  .p-c-hora .selector { font-family: var(--tipo-titulo); font-weight: 700; color: var(--lima); }
+  .p-c-quitar { grid-column: 1 / -1; }
+  .p-c-quitar .boton { width: 100%; justify-content: center; gap: var(--e-2); }
+  .p-solo-movil { display: inline; }
+  .p-cuadro-titulo { margin-bottom: 0; }
+}

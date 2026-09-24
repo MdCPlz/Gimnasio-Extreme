@@ -34,7 +34,7 @@
 
   var datos = P.almacen.lee(CLAVE_BORRADOR, null) || clona(B);
   var sucio = !!P.almacen.lee(CLAVE_BORRADOR, null);
-  var seccion = 'horarios';
+  var seccion = 'resumen';
   var correo = '';
 
   /* B es el contenido PUBLICADO. Se cambia en su sitio (no se sustituye el
@@ -287,6 +287,8 @@
 
   /* ============================================================ EL ARMAZÓN */
   var NAV = [
+    { id: 'resumen', n: 'Visión general', i: 'grafico' },
+    { grupo: 'La web' },
     { id: 'horarios', n: 'Horarios', i: 'reloj', cuenta: function () { return datos.agenda.horario.length; } },
     { id: 'clases', n: 'Actividades', i: 'fuego', cuenta: function () { return datos.clases.length; } },
     { id: 'planes', n: 'Cuotas', i: 'tarjeta', cuenta: function () { return datos.tarifas.planes.length; } },
@@ -294,7 +296,7 @@
     { grupo: 'Ajustes' },
     { id: 'publicacion', n: 'Publicación', i: 'candado' }
   ];
-  var OPERACION = { publicacion: 1 };
+  var OPERACION = { resumen: 1, publicacion: 1 };
 
   function pintaPanel() {
     hueco.innerHTML =
@@ -363,14 +365,14 @@
   }
 
   /* Móvil: las mismas secciones, en pestañas abajo, al alcance del pulgar */
-  var NOMBRE_CORTO = { clases: 'Actividad.', publicacion: 'Ajustes' };
+  var NOMBRE_CORTO = { resumen: 'General' };
   function pintaTabs() {
     var tabs = document.getElementById('pn-tabs');
     if (!tabs) return;
-    tabs.innerHTML = NAV.filter(function (x) { return !x.grupo; }).map(function (x) {
+    tabs.innerHTML = NAV.filter(function (x) { return !x.grupo && x.id !== 'publicacion'; }).map(function (x) {
       return '<button type="button" data-va="' + x.id + '"' + (seccion === x.id ? ' aria-current="true"' : '') + '>' +
         '<span class="p-tabs__ico">' + icono(x.i, 20) + '</span>' +
-        esc(x.id === 'clases' ? 'Actividades' : NOMBRE_CORTO[x.id] || x.n) + '</button>';
+        esc(NOMBRE_CORTO[x.id] || x.n) + '</button>';
     }).join('');
   }
 
@@ -459,7 +461,101 @@
       '</div>';
   }
 
-  var VISTAS_OP = { publicacion: vistaPublicacion };
+  /* ----- Visión general: cómo está todo de un vistazo ----- */
+  var DIAS_SEMANA = ['', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'];
+  function actividad(id) {
+    return datos.clases.filter(function (c) { return c.id === id; })[0] || { nombre: id, duracion: 0 };
+  }
+  function euro(n) { return n == null || n === '' ? '—' : P.euros(n); }
+
+  function vistaResumen() {
+    var e = G.estado();
+    var hoy = new Date(), dHoy = P.diaSemana(hoy);
+    var f = function (ts) { return ts ? new Date(ts).toLocaleString('es-ES', { dateStyle: 'long', timeStyle: 'short' }) : ''; };
+    var horario = datos.agenda.horario;
+    var deHoy = horario.filter(function (x) { return x.dia === dHoy; })
+      .sort(function (a, b) { return a.hora < b.hora ? -1 : 1; });
+    var ahora = P.pad(hoy.getHours()) + ':' + P.pad(hoy.getMinutes());
+    var siguiente = deHoy.filter(function (x) { return x.hora >= ahora; })[0];
+    var planes = datos.tarifas.planes, extras = datos.tarifas.extras;
+    var desde = planes.reduce(function (m, x) { var v = +x.alMes || +x.precio; return v && (m == null || v < m) ? v : m; }, null);
+    var plazas = horario.reduce(function (n, x) { return n + (+x.plazas || +datos.agenda.plazasPorDefecto || 0); }, 0);
+    var cambios = cuentaCambios();
+
+    var porDia = [1, 2, 3, 4, 5, 6, 7].map(function (d) { return horario.filter(function (x) { return x.dia === d; }).length; });
+    var tope = Math.max.apply(null, porDia.concat(1));
+
+    return titulo('Visión general', esc(P.mayus(P.fechaLarga(hoy))) + '. Cómo está la web ahora mismo.') +
+
+      /* estado de la publicación */
+      '<div class="p-estado-web"' + (sucio ? ' data-sucio="true"' : '') + '>' +
+        '<span class="p-estado-web__ico">' + icono(sucio ? 'aviso' : 'ok', 22) + '</span>' +
+        '<div><b>' + (sucio ? cambios + (cambios === 1 ? ' cambio sin publicar' : ' cambios sin publicar')
+                            : 'La web está al día') + '</b>' +
+          '<span>' + (sucio ? 'Lo ves tú en este dispositivo; la gente aún no. Pulsa Publicar cuando acabes.'
+                            : (e.actualizado ? 'Última publicación: ' + esc(f(e.actualizado)) + '.' : 'Todavía no se ha publicado nada desde el panel.')) +
+          '</span></div>' +
+        (sucio ? '<button class="boton boton--pequeno" type="button" data-op="publicar">' + icono('guardar', 15) + ' Publicar</button>' : '') +
+      '</div>' +
+
+      /* cifras */
+      '<div class="numeros p-numeros">' +
+        '<button type="button" class="numero" data-va="horarios"><b>' + horario.length + '</b><span>clases a la semana</span></button>' +
+        '<button type="button" class="numero" data-va="clases"><b>' + datos.clases.length + '</b><span>actividades</span></button>' +
+        '<button type="button" class="numero" data-va="planes"><b>' + (desde ? P.euros(desde) : '—') + '</b><span>cuota más barata al mes</span></button>' +
+        '<button type="button" class="numero" data-va="horarios"><b>' + P.numero(plazas) + '</b><span>plazas a la semana</span></button>' +
+      '</div>' +
+
+      '<div class="p-general">' +
+        /* hoy */
+        '<section class="detalle__caja">' +
+          '<div class="p-caja-cab"><h3>Hoy, ' + esc(DIAS_SEMANA[dHoy]) + '</h3>' +
+            '<button class="p-enlace" type="button" data-va="horarios">Cambiar horarios ' + icono('derecha', 14) + '</button></div>' +
+          (deHoy.length ? '<ul class="p-hoy">' + deHoy.map(function (x) {
+            var a = actividad(x.clase), c = P.centroDe(x.centro);
+            var pasada = x.hora < ahora;
+            return '<li' + (x === siguiente ? ' data-siguiente="true"' : pasada ? ' data-pasada="true"' : '') + '>' +
+              '<b>' + esc(x.hora) + '</b>' +
+              '<span><b>' + esc(a.nombre) + '</b><small>' + esc(c ? c.nombre : x.centro) +
+                (x.monitor ? ' · ' + esc(x.monitor) : '') + ' · ' + (x.plazas || datos.agenda.plazasPorDefecto) + ' plazas</small></span>' +
+              (x === siguiente ? '<em>Siguiente</em>' : '') +
+            '</li>';
+          }).join('') + '</ul>' : '<p class="p-nada">Hoy no hay clases dirigidas.</p>') +
+        '</section>' +
+
+        /* la semana */
+        '<section class="detalle__caja">' +
+          '<div class="p-caja-cab"><h3>Clases por día</h3></div>' +
+          '<div class="p-barras">' + porDia.map(function (n, i) {
+            return '<div' + (i + 1 === dHoy ? ' data-hoy="true"' : '') + '><em>' + n + '</em>' +
+              '<i style="height:' + Math.round(n / tope * 100) + '%"></i><span>' + esc(DIAS_SEMANA[i + 1].slice(0, 3)) + '</span></div>';
+          }).join('') + '</div>' +
+          '<div class="p-centros">' + B.centros.map(function (c) {
+            var n = horario.filter(function (x) { return x.centro === c.id; }).length;
+            return '<span><b>' + n + '</b> en ' + esc(c.nombre) + '</span>';
+          }).join('') + '</div>' +
+        '</section>' +
+
+        /* precios */
+        '<section class="detalle__caja">' +
+          '<div class="p-caja-cab"><h3>Precios</h3>' +
+            '<button class="p-enlace" type="button" data-va="planes">Cambiar cuotas ' + icono('derecha', 14) + '</button></div>' +
+          '<ul class="p-precios">' +
+            planes.map(function (x) {
+              return '<li><span>' + esc(x.nombre) + '</span><b>' + euro(x.precio) + '</b></li>';
+            }).join('') +
+            extras.map(function (x) {
+              return '<li class="p-precios__bono"><span>' + esc(x.nombre) + '</span><b>' + euro(x.precio) + '</b></li>';
+            }).join('') +
+          '</ul>' +
+        '</section>' +
+      '</div>' +
+
+      '<p class="p-ajustes"><button class="p-enlace" type="button" data-va="publicacion">' + icono('candado', 14) +
+        ' Publicación, historial y cuenta ' + icono('derecha', 14) + '</button></p>';
+  }
+
+  var VISTAS_OP = { resumen: vistaResumen, publicacion: vistaPublicacion };
 
   /* Espera la respuesta del servidor: si va bien avisa; si no, lo dice. */
   function hacer(promesa, ok, despues) {
@@ -481,6 +577,8 @@
     z.addEventListener('click', function (e) {
       var t = e.target.closest('button');
       if (!t) return;
+      if (t.getAttribute('data-va')) { irA(t.getAttribute('data-va')); return; }
+      if (t.getAttribute('data-op') === 'publicar') { abrePublicar(); return; }
       if (t.getAttribute('data-restaurar')) {
         if (sucio && !confirm('Tienes cambios sin publicar: se perderán. ¿Seguir?')) return;
         if (!confirm('¿Volver a publicar la web tal y como estaba en esta versión?')) return;
@@ -1045,86 +1143,108 @@
   }
 
   /* ============================================================== HORARIOS */
+  /* Se ve un día cada vez (el de hoy al entrar): así el cuadro cabe en el
+     móvil y es fácil cambiar la hora de una clase concreta. «Toda la semana»
+     enseña el cuadro entero, ordenado. */
+  var diaHorario = P.diaSemana(new Date());
+
   function vistaHorarios() {
     var DIAS = ['', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+    var CORTOS = ['', 'L', 'M', 'X', 'J', 'V', 'S', 'D'];
     var h = datos.agenda.horario;
+    var filas = h.map(function (s, i) { return { s: s, i: i }; })
+      .filter(function (o) { return diaHorario === 0 || o.s.dia === diaHorario; })
+      .sort(function (a, b) { return (a.s.dia - b.s.dia) || (a.s.hora < b.s.hora ? -1 : a.s.hora > b.s.hora ? 1 : 0); });
 
     return '<div class="panel__titulo">' +
-        '<h2>Cuadro de clases</h2>' +
+        '<h2>Horarios</h2>' +
         '<p>Qué clase, a qué hora, en qué centro y con cuántas plazas. Es lo que ve el ' +
-          'socio al reservar. ⚠ El de ahora es una propuesta: sustitúyelo por el real.</p>' +
+          'socio al reservar.</p>' +
       '</div>' +
 
-      '<div class="detalle__caja" style="margin-bottom:var(--e-5)">' +
+      '<div class="p-dias" role="group" aria-label="Día">' +
+        [1, 2, 3, 4, 5, 6, 7].map(function (d) {
+          var n = h.filter(function (s) { return s.dia === d; }).length;
+          return '<button type="button" class="p-dia-btn" data-ver-dia="' + d + '"' +
+            (diaHorario === d ? ' aria-pressed="true"' : '') + ' aria-label="' + DIAS[d] + ', ' + n + ' clases">' +
+            '<b>' + CORTOS[d] + '</b><small>' + n + '</small></button>';
+        }).join('') +
+        '<button type="button" class="p-dia-btn p-dia-btn--todo" data-ver-dia="0"' +
+          (diaHorario === 0 ? ' aria-pressed="true"' : '') + '><b>Semana</b><small>' + h.length + '</small></button>' +
+      '</div>' +
+
+      '<div class="detalle__caja">' +
+        '<h3 class="p-cuadro-titulo">' + (diaHorario ? DIAS[diaHorario] : 'Toda la semana') +
+          ' · ' + filas.length + (filas.length === 1 ? ' clase' : ' clases') + '</h3>' +
+        (filas.length ? '<table class="p-cuadro">' +
+          '<thead><tr>' +
+            ['Día', 'Hora', 'Clase', 'Centro', 'Monitor', 'Plazas', ''].map(function (t) {
+              return '<th>' + t + '</th>';
+            }).join('') +
+          '</tr></thead><tbody>' +
+          filas.map(function (o) {
+            var s = o.s, i = o.i;
+            return '<tr>' +
+              '<td class="p-c-dia" data-et="Día"><select class="selector" data-ruta="agenda.horario.' + i + '.dia" data-tipo="numero">' +
+                [1, 2, 3, 4, 5, 6, 7].map(function (d) {
+                  return '<option value="' + d + '"' + (s.dia === d ? ' selected' : '') + '>' + DIAS[d] + '</option>';
+                }).join('') + '</select></td>' +
+              '<td class="p-c-hora" data-et="Hora"><input type="time" class="selector" ' +
+                'data-ruta="agenda.horario.' + i + '.hora" data-tipo="texto" value="' + esc(s.hora) + '"></td>' +
+              '<td class="p-c-clase" data-et="Clase"><select class="selector" data-ruta="agenda.horario.' + i + '.clase" data-tipo="texto">' +
+                datos.clases.map(function (c) {
+                  return '<option value="' + esc(c.id) + '"' + (s.clase === c.id ? ' selected' : '') + '>' + esc(c.nombre) + '</option>';
+                }).join('') + '</select></td>' +
+              '<td class="p-c-centro" data-et="Centro"><select class="selector" data-ruta="agenda.horario.' + i + '.centro" data-tipo="texto">' +
+                datos.centros.map(function (c) {
+                  return '<option value="' + esc(c.id) + '"' + (s.centro === c.id ? ' selected' : '') + '>' + esc(c.nombre) + '</option>';
+                }).join('') + '</select></td>' +
+              '<td class="p-c-monitor" data-et="Monitor"><input class="selector" data-ruta="agenda.horario.' + i +
+                '.monitor" data-tipo="texto" value="' + esc(s.monitor || '') + '" placeholder="Sin asignar"></td>' +
+              '<td class="p-c-plazas" data-et="Plazas"><input type="number" class="selector" min="1" inputmode="numeric" ' +
+                'data-ruta="agenda.horario.' + i + '.plazas" data-tipo="numero" value="' +
+                (s.plazas || datos.agenda.plazasPorDefecto) + '"></td>' +
+              '<td class="p-c-quitar"><button class="boton boton--fantasma boton--pequeno" type="button" ' +
+                'data-quitar="' + i + '" aria-label="Quitar esta clase">' + icono('cerrar', 14) +
+                '<span class="p-solo-movil">Quitar</span></button></td>' +
+            '</tr>';
+          }).join('') +
+        '</tbody></table>' : '<p class="p-nada">Este día no hay clases.</p>') +
+        '<div class="coleccion__acciones" style="border-top:1px solid var(--borde);margin-top:var(--e-4)">' +
+          '<button class="boton boton--pequeno" type="button" id="pn-nueva-sesion">+ Añadir una clase' +
+            (diaHorario ? ' el ' + DIAS[diaHorario].toLowerCase() : '') + '</button>' +
+        '</div>' +
+      '</div>' +
+
+      '<div class="detalle__caja" style="margin-top:var(--e-5)">' +
         '<div class="campo">' +
           '<label class="palanca">' +
             '<input type="checkbox" data-ruta="agenda.demo" data-tipo="si-no"' +
               (datos.agenda.demo ? ' checked' : '') + '>' +
             '<span class="palanca__pista" aria-hidden="true"></span>' +
-            '<span class="palanca__txt">Avisar de que el cuadro es de ejemplo' +
-              '<small>Apágalo cuando cargues el horario real: quita el aviso rojo de la página.</small>' +
+            '<span class="palanca__txt">Avisar en la web de que el cuadro es de ejemplo' +
+              '<small>Apágalo cuando esté el horario real: quita el aviso rojo de la página.</small>' +
             '</span>' +
           '</label>' +
         '</div>' +
-      '</div>' +
-
-      '<div class="detalle__caja">' +
-        '<div style="overflow-x:auto">' +
-          '<table style="width:100%;border-collapse:collapse;font-size:var(--t--1);min-width:44rem">' +
-            '<thead><tr>' +
-              ['Día', 'Hora', 'Clase', 'Centro', 'Monitor', 'Plazas', ''].map(function (t) {
-                return '<th style="text-align:left;padding:var(--e-2);border-bottom:1px solid var(--borde);' +
-                  'font-family:var(--tipo-titulo);color:var(--lima);font-size:0.7rem;' +
-                  'letter-spacing:.08em;text-transform:uppercase">' + t + '</th>';
-              }).join('') +
-            '</tr></thead><tbody>' +
-            h.map(function (s, i) {
-              return '<tr>' +
-                celda('<select class="selector" data-ruta="agenda.horario.' + i + '.dia" data-tipo="numero">' +
-                  [1, 2, 3, 4, 5, 6, 7].map(function (d) {
-                    return '<option value="' + d + '"' + (s.dia === d ? ' selected' : '') + '>' +
-                      DIAS[d] + '</option>';
-                  }).join('') + '</select>') +
-                celda('<input type="time" class="selector" style="width:6.5rem" ' +
-                  'data-ruta="agenda.horario.' + i + '.hora" data-tipo="texto" value="' + esc(s.hora) + '">') +
-                celda('<select class="selector" data-ruta="agenda.horario.' + i + '.clase" data-tipo="texto">' +
-                  datos.clases.map(function (c) {
-                    return '<option value="' + esc(c.id) + '"' + (s.clase === c.id ? ' selected' : '') + '>' +
-                      esc(c.nombre) + '</option>';
-                  }).join('') + '</select>') +
-                celda('<select class="selector" data-ruta="agenda.horario.' + i + '.centro" data-tipo="texto">' +
-                  datos.centros.map(function (c) {
-                    return '<option value="' + esc(c.id) + '"' + (s.centro === c.id ? ' selected' : '') + '>' +
-                      esc(c.nombre) + '</option>';
-                  }).join('') + '</select>') +
-                celda('<input class="selector" style="width:7rem" data-ruta="agenda.horario.' + i +
-                  '.monitor" data-tipo="texto" value="' + esc(s.monitor || '') + '">') +
-                celda('<input type="number" class="selector" style="width:4.5rem" min="1" ' +
-                  'data-ruta="agenda.horario.' + i + '.plazas" data-tipo="numero" value="' +
-                  (s.plazas || datos.agenda.plazasPorDefecto) + '">') +
-                celda('<button class="boton boton--fantasma boton--pequeno" type="button" ' +
-                  'data-quitar="' + i + '" aria-label="Quitar esta clase">' + icono('cerrar', 14) + '</button>') +
-              '</tr>';
-            }).join('') +
-          '</tbody></table>' +
-        '</div>' +
-        '<div class="coleccion__acciones" style="border-top:1px solid var(--borde);margin-top:var(--e-4)">' +
-          '<button class="boton boton--pequeno" type="button" id="pn-nueva-sesion">+ Añadir una clase al cuadro</button>' +
-        '</div>' +
       '</div>';
-  }
-
-  function celda(html) {
-    return '<td style="padding:var(--e-2);border-bottom:1px solid var(--borde);vertical-align:middle">' +
-      html + '</td>';
   }
 
   function montaHorarios() {
     var z = document.getElementById('pn-zona');
     enganchaCampos(z);
+    /* al cambiar el día de una clase, se reordena el cuadro */
+    z.addEventListener('change', function (e) {
+      if (/\.dia$/.test(e.target.getAttribute('data-ruta') || '')) { pintaNav(); pintaZona(); }
+    });
     z.addEventListener('click', function (e) {
+      var d = e.target.closest('[data-ver-dia]');
+      if (d) { diaHorario = +d.getAttribute('data-ver-dia'); pintaZona(); return; }
       var q = e.target.closest('[data-quitar]');
       if (q) {
+        var s = datos.agenda.horario[+q.getAttribute('data-quitar')];
+        var a = datos.clases.filter(function (c) { return c.id === s.clase; })[0];
+        if (!confirm('¿Quitar ' + (a ? a.nombre : 'esta clase') + ' de las ' + s.hora + '?')) return;
         datos.agenda.horario.splice(+q.getAttribute('data-quitar'), 1);
         marcaSucio(); pintaNav(); pintaZona();
         return;
@@ -1132,13 +1252,16 @@
       if (e.target.closest('#pn-nueva-sesion')) {
         var ultima = datos.agenda.horario[datos.agenda.horario.length - 1] || {};
         datos.agenda.horario.push({
-          dia: ultima.dia || 1, hora: '19:00',
+          dia: diaHorario || ultima.dia || 1, hora: '19:00',
           clase: (datos.clases[0] || {}).id, centro: (datos.centros[0] || {}).id,
           monitor: '', plazas: datos.agenda.plazasPorDefecto
         });
         marcaSucio(); pintaNav(); pintaZona();
-        var t = document.querySelector('#pn-zona table');
-        if (t) t.scrollIntoView({ block: 'end', behavior: 'smooth' });
+        var filas = document.querySelectorAll('#pn-zona .p-cuadro tbody tr');
+        /* la nueva va a las 19:00: se busca por su índice */
+        var ultimaFila = document.querySelector('#pn-zona [data-ruta="agenda.horario.' + (datos.agenda.horario.length - 1) + '.hora"]');
+        if (ultimaFila) { ultimaFila.closest('tr').scrollIntoView({ block: 'center', behavior: 'smooth' }); ultimaFila.focus(); }
+        else if (filas.length) filas[filas.length - 1].scrollIntoView({ block: 'center' });
       }
     });
   }

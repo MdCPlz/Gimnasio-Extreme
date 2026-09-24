@@ -11,3 +11,5 @@ dist/
 
 # Página de pruebas del panel (se genera con tools/generar-prueba.js)
 tools/panel-prueba.html
+
+.vercel
