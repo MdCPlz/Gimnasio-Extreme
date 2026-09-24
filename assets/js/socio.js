@@ -2,17 +2,22 @@
    SOCIO — sesión y reservas de clase del visitante.
    -----------------------------------------------------------------------------
    IMPORTANTE, para que no haya malentendidos: esto NO es un sistema de cuentas.
-   No hay contraseñas ni servidor de usuarios. El socio se identifica con su
-   correo para que la web recuerde SUS reservas EN SU dispositivo, y cada reserva
-   se avisa al club por correo desde /api/inscripcion.
+   No hay contraseñas. El socio se identifica con su correo y la web recuerda
+   SUS reservas EN SU dispositivo.
+   Con la base de datos conectada (window.XD.activo), cada plaza se guarda en
+   ella: el aforo es compartido por todos los socios y el club la ve en el
+   panel al momento. Sin ella, la plaza solo vive en el dispositivo y el club
+   se entera por correo (/api/inscripcion).
+   apunta() y cancela() devuelven siempre una promesa.
    El alta, la cuota y los recibos siguen estando en el sistema real del club.
    Expone window.XS.
    ========================================================================== */
 (function () {
   'use strict';
 
-  var B = window.__BRAND__, P = window.XP;
+  var B = window.__BRAND__, P = window.XP, D = window.XD;
   if (!B || !P) return;
+  var enBase = !!(D && D.activo);
 
   var CLAVE_SESION = 'xtreme.socio';
   var CLAVE_RESERVAS = 'xtreme.reservas';
@@ -80,49 +85,74 @@
     return todas().some(function (x) { return x.id === id && x.email === s.email; });
   }
 
-  /** Cuántas plazas ha cogido la web para esa sesión concreta. */
+  /** Cuántas plazas hay cogidas en esa sesión concreta. */
   function ocupadas(fecha, hora, clase, centro) {
+    if (enBase) return D.cogidas(fecha, hora, clase, centro);
     var id = idDe(fecha, hora, clase, centro);
     return todas().filter(function (x) { return x.id === id; }).length;
   }
 
   function apunta(datos) {
     var s = sesion();
-    if (!s) return { ok: false, motivo: 'sin-sesion' };
+    if (!s) return Promise.resolve({ ok: false, motivo: 'sin-sesion' });
     var id = idDe(datos.fecha, datos.hora, datos.clase, datos.centro);
-    var r = todas();
-    if (r.some(function (x) { return x.id === id && x.email === s.email; })) {
-      return { ok: false, motivo: 'repetida' };
+    if (todas().some(function (x) { return x.id === id && x.email === s.email; })) {
+      return Promise.resolve({ ok: false, motivo: 'repetida' });
     }
-    r.push({
-      id: id, fecha: datos.fecha, hora: datos.hora, clase: datos.clase,
-      centro: datos.centro, monitor: datos.monitor || '', email: s.email,
-      nombre: s.nombre, creada: Date.now()
+    var guardaAqui = function (idBase) {
+      var r = todas();
+      r.push({
+        id: id, base: idBase || null, fecha: datos.fecha, hora: datos.hora, clase: datos.clase,
+        centro: datos.centro, monitor: datos.monitor || '', email: s.email,
+        nombre: s.nombre, creada: Date.now()
+      });
+      var ok = P.almacen.guarda(CLAVE_RESERVAS, r);
+      avisaAlClub('inscripcion', {
+        nombre: s.nombre, email: s.email, fecha: datos.fecha, hora: datos.hora,
+        clase: datos.clase, centro: datos.centro
+      });
+      document.dispatchEvent(new CustomEvent('xt:reservas'));
+      return ok;
+    };
+
+    if (!enBase) {
+      return Promise.resolve(guardaAqui(null) ? { ok: true } : { ok: false, motivo: 'sin-espacio' });
+    }
+    return D.apuntarse({
+      fecha: datos.fecha, hora: datos.hora, clase: datos.clase, centro: datos.centro,
+      nombre: s.nombre, email: s.email
+    }).then(function (r) {
+      if (!r.ok) return { ok: false, motivo: 'base', error: r.error };
+      guardaAqui(r.id);          // si el navegador no deja guardar, la plaza sigue en la base
+      return { ok: true };
     });
-    if (!P.almacen.guarda(CLAVE_RESERVAS, r)) return { ok: false, motivo: 'sin-espacio' };
-    avisaAlClub('inscripcion', {
-      nombre: s.nombre, email: s.email, fecha: datos.fecha, hora: datos.hora,
-      clase: datos.clase, centro: datos.centro
-    });
-    document.dispatchEvent(new CustomEvent('xt:reservas'));
-    return { ok: true };
   }
 
   function cancela(id) {
     var s = sesion();
-    if (!s) return false;
-    var r = todas(), antes = r.length;
-    var fuera = r.filter(function (x) { return x.id === id && x.email === s.email; })[0];
-    r = r.filter(function (x) { return !(x.id === id && x.email === s.email); });
-    P.almacen.guarda(CLAVE_RESERVAS, r);
-    if (fuera) {
+    if (!s) return Promise.resolve(false);
+    var fuera = todas().filter(function (x) { return x.id === id && x.email === s.email; })[0];
+    if (!fuera) return Promise.resolve(false);
+
+    var quitaAqui = function () {
+      P.almacen.guarda(CLAVE_RESERVAS, todas().filter(function (x) {
+        return !(x.id === id && x.email === s.email);
+      }));
       avisaAlClub('cancelacion', {
         nombre: s.nombre, email: s.email, fecha: fuera.fecha, hora: fuera.hora,
         clase: fuera.clase, centro: fuera.centro
       });
-    }
-    document.dispatchEvent(new CustomEvent('xt:reservas'));
-    return r.length < antes;
+      document.dispatchEvent(new CustomEvent('xt:reservas'));
+      return true;
+    };
+
+    if (!enBase || !fuera.base) return Promise.resolve(quitaAqui());
+    return D.soltarPlaza(fuera.base, s.email).then(function (r) {
+      /* «No encuentro esa reserva» = el club ya la quitó: se quita también aquí */
+      if (r.ok || (r.error && !r.red)) return quitaAqui();
+      alert(r.error || 'No se ha podido cancelar. Prueba otra vez.');
+      return false;
+    });
   }
 
   /* El club recibe el aviso por correo. Si la función no está publicada (por

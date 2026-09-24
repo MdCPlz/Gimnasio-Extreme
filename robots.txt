@@ -2,7 +2,6 @@ User-agent: *
 Allow: /
 
 # Zonas privadas: ni se indexan ni tiene sentido rastrearlas
-Disallow: /panel.html
 Disallow: /area-socio.html
 Disallow: /api/
 

@@ -1,0 +1,298 @@
+/* =============================================================================
+   PANEL — lo propio del día a día (citas, plazas, mensajes), avisos y visor.
+   El resto del panel usa las piezas de assets/css/estilos.css.
+   ========================================================================== */
+
+.p-cargando { padding: var(--e-9) var(--margen); text-align: center; color: var(--texto-suave); }
+
+/* ------------------------------------------------------------ navegación */
+.p-nav-grupo {
+  margin: var(--e-4) 0 var(--e-1); padding: 0 var(--e-3);
+  font-size: 0.7rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--gris-claro);
+}
+.p-nav-grupo:first-child { margin-top: 0; }
+.panel__nav b.p-aviso { background: var(--pizarra); color: var(--hueso); }
+.panel__nav b.p-aviso--fuerte { background: var(--lima); color: var(--tinta); }
+.panel__nav button[aria-current='true'] b.p-aviso--fuerte { background: var(--tinta); color: var(--lima); }
+
+/* En móvil la navegación es una tira horizontal: los rótulos de grupo sobran */
+@media (max-width: 63.99em) {
+  .p-nav-grupo { display: none; }
+}
+
+
+/* ---------------------------------------------------------- cabeceras */
+.p-titulo-acc { display: flex; flex-wrap: wrap; gap: var(--e-4); align-items: end; justify-content: space-between; }
+.p-dia {
+  font-size: var(--t-0); font-weight: 600; margin: var(--e-6) 0 var(--e-3);
+  color: var(--hueso); letter-spacing: 0.01em;
+}
+.p-nada { color: var(--texto-suave); font-size: var(--t--1); margin: 0; }
+
+.p-numeros { grid-template-columns: repeat(2, 1fr); }
+@media (min-width: 48em) { .p-numeros { grid-template-columns: repeat(4, 1fr); } }
+.p-numeros .numero {
+  text-align: left; font: inherit; color: inherit; cursor: pointer;
+  background: var(--superficie); border: 1px solid var(--borde); border-radius: var(--radio-g);
+  padding: var(--e-4);
+  transition: border-color var(--rapido) var(--curva);
+}
+.p-numeros .numero:hover { border-color: var(--lima); }
+
+/* -------------------------------------------------------------- filtros */
+.p-filtros { display: flex; flex-wrap: wrap; gap: var(--e-2); align-items: center; margin-bottom: var(--e-2); }
+.p-filtro {
+  font: inherit; font-size: var(--t--1); cursor: pointer;
+  padding: 0.45rem 0.8rem; border-radius: 999px;
+  background: transparent; color: var(--texto-suave); border: 1px solid var(--borde);
+}
+.p-filtro b { font-weight: 600; margin-left: 0.2rem; color: var(--hueso); }
+.p-filtro[aria-pressed='true'] { background: var(--lima); border-color: var(--lima); color: var(--tinta); }
+.p-filtro[aria-pressed='true'] b { color: var(--tinta); }
+.p-selector { margin-left: auto; min-width: 12rem; }
+@media (max-width: 43.99em) { .p-selector { margin-left: 0; width: 100%; } }
+
+/* ------------------------------------------------------ filas de la lista */
+.p-lista { display: grid; gap: var(--e-2); }
+.p-fila {
+  display: grid; gap: var(--e-3) var(--e-4); align-items: start;
+  grid-template-columns: 4rem minmax(0, 1fr);
+  background: var(--superficie); border: 1px solid var(--borde); border-radius: var(--radio-g);
+  padding: var(--e-4);
+}
+.p-fila.p-mensaje { grid-template-columns: minmax(0, 1fr); }
+.p-fila[data-estado='cancelada'], .p-fila[data-estado='no_vino'] { opacity: 0.62; }
+.p-fila[data-nuevo='true'] { border-color: var(--lima); }
+.p-cuando b { display: block; font-family: var(--tipo-titulo); font-size: var(--t-1); line-height: 1.1; }
+.p-cuando span { font-size: var(--t--1); color: var(--texto-suave); }
+.p-info { display: grid; gap: 0.2rem; min-width: 0; }
+.p-info > b { font-size: var(--t-0); }
+.p-info > b small { font-weight: 400; color: var(--texto-suave); font-size: var(--t--1); }
+.p-info > span { color: var(--texto-suave); font-size: var(--t--1); }
+.p-contacto { display: flex; flex-wrap: wrap; gap: 0.25rem var(--e-4); margin-top: 0.15rem; }
+.p-contacto a { color: var(--hueso); text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem; overflow-wrap: anywhere; }
+.p-contacto a:hover { color: var(--lima); }
+.p-nota {
+  margin: var(--e-2) 0 0; padding: var(--e-2) var(--e-3);
+  border-left: 2px solid var(--pizarra); color: var(--humo);
+  font-size: var(--t--1); white-space: pre-wrap; overflow-wrap: anywhere;
+}
+.p-acc {
+  grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: var(--e-2) var(--e-3);
+  align-items: center; justify-content: space-between;
+}
+.p-chips, .p-botones { display: flex; flex-wrap: wrap; gap: var(--e-2); }
+@media (min-width: 64em) {
+  .p-fila { grid-template-columns: 4.5rem minmax(0, 1fr) auto; }
+  .p-fila.p-mensaje { grid-template-columns: minmax(0, 1fr) auto; }
+  .p-acc { grid-column: auto; flex-direction: column; align-items: flex-end; }
+}
+
+.p-chip {
+  display: inline-block; padding: 0.15rem 0.55rem; border-radius: 999px;
+  font-size: 0.72rem; font-weight: 600; letter-spacing: 0.02em;
+  background: var(--pizarra); color: var(--humo);
+}
+.p-chip[data-tipo='confirmada'] { background: color-mix(in srgb, var(--lima) 18%, transparent); color: var(--lima); }
+.p-chip[data-tipo='atendida'] { background: color-mix(in srgb, var(--exito) 18%, transparent); color: var(--exito); }
+.p-chip[data-tipo='no_vino'], .p-chip[data-tipo='cancelada'] { background: color-mix(in srgb, var(--alerta) 16%, transparent); color: var(--alerta); }
+.p-chip[data-tipo='origen'] { background: transparent; border: 1px solid var(--borde); color: var(--texto-suave); }
+
+/* --------------------------------------------------- sesiones de clase */
+.p-sesion {
+  background: var(--superficie); border: 1px solid var(--borde); border-radius: var(--radio-g);
+  padding: var(--e-3) var(--e-4); margin-bottom: var(--e-2);
+}
+.p-sesion-cab {
+  display: grid; align-items: center; gap: var(--e-2) var(--e-4);
+  grid-template-columns: 3.5rem minmax(0, 1fr) auto;
+}
+.p-sesion-cab > b { font-family: var(--tipo-titulo); font-size: var(--t-1); }
+.p-sesion-cab > span:not(.p-aforo) { font-size: var(--t--1); color: var(--texto-suave); }
+.p-sesion-cab > span b { color: var(--hueso); }
+.p-sesion-cab em { font-style: normal; font-weight: 600; font-variant-numeric: tabular-nums; }
+.p-aforo { grid-column: 1 / -1; order: 5; height: 4px; border-radius: 4px; background: var(--pizarra); overflow: hidden; }
+.p-aforo i { display: block; height: 100%; background: var(--lima); }
+.p-sesion[data-lleno='true'] .p-aforo i { background: var(--alerta); }
+.p-sesion[data-lleno='true'] em { color: var(--alerta); }
+
+.p-gente { list-style: none; margin: var(--e-3) 0 0; padding: 0; display: grid; gap: 1px; }
+.p-gente li {
+  display: flex; gap: var(--e-3); align-items: center; justify-content: space-between;
+  padding: var(--e-2) 0; border-top: 1px solid var(--borde); font-size: var(--t--1);
+}
+.p-gente li a { color: var(--texto-suave); margin-left: var(--e-2); text-decoration: none; overflow-wrap: anywhere; }
+.p-gente li a:hover { color: var(--lima); }
+
+/* -------------------------------------------------------------- ventana */
+#pn-modal .publicar__caja { max-width: 36rem; }
+#pn-modal .formulario { gap: var(--e-4); }
+
+/* ------------------------------------------------------ avisos flotantes */
+.p-tostadas {
+  position: fixed; z-index: 90; left: 50%; bottom: max(1rem, env(safe-area-inset-bottom));
+  transform: translateX(-50%); display: grid; gap: var(--e-2);
+  width: min(30rem, calc(100vw - 2rem)); pointer-events: none;
+}
+.p-tostada {
+  pointer-events: auto; display: flex; gap: var(--e-3); align-items: flex-start;
+  background: var(--hueso); color: var(--tinta); border-radius: var(--radio-g);
+  padding: var(--e-3) var(--e-4); box-shadow: var(--sombra-alta); font-size: var(--t--1);
+  animation: p-entra var(--medio) var(--curva);
+  transition: opacity var(--medio), transform var(--medio);
+}
+.p-tostada i {
+  flex: none; width: 1.3rem; height: 1.3rem; border-radius: 50%; display: grid; place-items: center;
+  font-style: normal; font-weight: 700; font-size: 0.75rem; background: var(--exito); color: var(--tinta);
+}
+.p-tostada--mal i { background: var(--alerta); }
+.p-tostada--nueva i { background: var(--lima); }
+.p-tostada.fuera { opacity: 0; transform: translateY(0.5rem); }
+@keyframes p-entra { from { opacity: 0; transform: translateY(0.75rem); } }
+
+body.p-ocupado { cursor: progress; }
+
+/* ---------------------------------------------------- la web, por dentro */
+.p-visor {
+  position: fixed; inset: 0; z-index: 80; display: grid; grid-template-rows: auto 1fr;
+  background: var(--tinta);
+}
+.p-visor[hidden] { display: none; }
+.p-visor-barra {
+  display: flex; gap: var(--e-3); align-items: center; justify-content: space-between;
+  padding: var(--e-2) var(--margen); padding-top: max(var(--e-2), env(safe-area-inset-top));
+  border-bottom: 1px solid var(--borde);
+}
+.p-visor-titulo { font-size: var(--t--1); color: var(--texto-suave); }
+@media (max-width: 43.99em) { .p-visor-titulo { display: none; } }
+.p-visor iframe { width: 100%; height: 100%; border: 0; background: var(--hueso); }
+html.p-visor-abierto, html.p-visor-abierto body { overflow: hidden; }
+
+@media (prefers-reduced-motion: reduce) {
+  .p-tostada { animation: none; transition: none; }
+}
+
+/* =============================================================================
+   MÓVIL — el panel se usa sobre todo desde el móvil, en recepción o en sala.
+   Por debajo de 64em: barra de arriba solo con iconos, las cuatro secciones
+   del día a día en pestañas abajo (al alcance del pulgar), «Más» con el resto
+   en una hoja que sube, y botones de acción grandes y a todo el ancho.
+   ========================================================================== */
+.p-barra-btn { gap: var(--e-2); }
+.p-tabs, .p-fab { display: none; }
+.p-hoja { display: none; }
+
+@media (max-width: 63.99em) {
+  .panel__barra { padding-block: var(--e-2); padding-top: max(var(--e-2), env(safe-area-inset-top)); }
+  .panel__barra .contenedor { flex-wrap: nowrap; gap: var(--e-2); }
+  .panel__marca img { width: 64px; height: 32px; }
+  .panel__estado span { display: none; }
+  .panel__estado i { width: 10px; height: 10px; }
+  .p-solo-ancho { display: none; }
+  .p-barra-btn { width: 2.75rem; height: 2.75rem; padding: 0; justify-content: center; }
+
+  /* la tira de navegación de arriba se sustituye por las pestañas */
+  .panel__nav { display: none; }
+  #principal { padding-bottom: calc(8.5rem + env(safe-area-inset-bottom)); }
+
+  .p-tabs {
+    position: fixed; z-index: 40; left: 0; right: 0; bottom: 0;
+    display: grid; grid-template-columns: repeat(5, 1fr);
+    padding: 0.35rem 0.25rem max(0.35rem, env(safe-area-inset-bottom));
+    background: color-mix(in srgb, var(--tinta) 94%, transparent);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    border-top: 1px solid var(--borde);
+  }
+  .p-tabs button {
+    display: grid; justify-items: center; gap: 0.2rem; padding: 0.3rem 0.1rem;
+    background: none; border: 0; cursor: pointer; font: inherit;
+    font-size: 0.7rem; font-weight: 600; color: var(--texto-suave);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .p-tabs__ico {
+    position: relative; display: grid; place-items: center;
+    width: 3.25rem; height: 1.9rem; border-radius: 999px;
+    transition: background var(--rapido) linear;
+  }
+  .p-tabs button[aria-current='true'] { color: var(--hueso); }
+  .p-tabs button[aria-current='true'] .p-tabs__ico { background: var(--lima); color: var(--tinta); }
+  .p-tabs__ico b {
+    position: absolute; top: -0.2rem; right: 0.3rem; min-width: 1.1rem; height: 1.1rem; padding: 0 0.25rem;
+    border-radius: 999px; background: var(--pizarra); color: var(--hueso);
+    font-size: 0.65rem; line-height: 1.1rem; text-align: center; font-style: normal;
+    box-shadow: 0 0 0 2px var(--tinta);
+  }
+  .p-tabs__ico b.fuerte { background: var(--alerta); color: var(--tinta); }
+
+  /* botón flotante: nueva cita */
+  .p-fab:not([hidden]) {
+    position: fixed; z-index: 41; right: var(--margen);
+    bottom: calc(5rem + env(safe-area-inset-bottom));
+    display: inline-flex; align-items: center; gap: var(--e-2);
+    height: 3.25rem; padding: 0 1.2rem; border: 0; border-radius: 999px; cursor: pointer;
+    background: var(--lima); color: var(--tinta); font: inherit; font-weight: 700;
+    box-shadow: var(--sombra-alta);
+  }
+  .p-tostadas { bottom: calc(5.25rem + env(safe-area-inset-bottom)); }
+
+  /* hoja «Más» */
+  .p-hoja {
+    display: block; position: fixed; inset: 0; z-index: 60;
+    background: rgb(0 0 0 / 0.55);
+    opacity: 0; visibility: hidden; transition: opacity var(--medio), visibility var(--medio);
+  }
+  .p-hoja[data-abierto='true'] { opacity: 1; visibility: visible; }
+  .p-hoja__caja {
+    position: absolute; left: 0; right: 0; bottom: 0; max-height: 82vh; overflow-y: auto;
+    background: var(--acero); border-radius: 18px 18px 0 0; border-top: 1px solid var(--borde);
+    padding: var(--e-2) var(--e-4) max(var(--e-5), env(safe-area-inset-bottom));
+    transform: translateY(100%); transition: transform var(--medio) var(--curva);
+    overscroll-behavior: contain;
+  }
+  .p-hoja[data-abierto='true'] .p-hoja__caja { transform: none; }
+  .p-hoja__asa { width: 2.5rem; height: 4px; border-radius: 4px; background: var(--pizarra); margin: 0 auto var(--e-3); }
+  #pn-mas-lista { display: grid; grid-template-columns: 1fr 1fr; gap: var(--e-2); }
+  #pn-mas-lista .p-nav-grupo { display: block; grid-column: 1 / -1; margin: var(--e-3) 0 0; padding: 0; }
+  #pn-mas-lista button {
+    display: flex; align-items: center; gap: var(--e-2); min-height: 3rem; padding: 0 var(--e-3);
+    background: var(--tinta); border: 1px solid var(--borde); border-radius: var(--radio-g);
+    color: var(--hueso); font: inherit; font-size: var(--t--1); font-weight: 600; text-align: left; cursor: pointer;
+  }
+  #pn-mas-lista button span { flex: 1; }
+  #pn-mas-lista button b { font-size: 0.7rem; color: var(--texto-suave); }
+  #pn-mas-lista button[aria-current='true'] { border-color: var(--lima); color: var(--lima); }
+  #pn-mas-lista button svg { color: var(--lima); flex: none; }
+
+  /* filas: acciones grandes, a todo el ancho */
+  .p-fila { grid-template-columns: 3.5rem minmax(0, 1fr); padding: var(--e-3); }
+  .p-acc { flex-direction: column; align-items: stretch; }
+  .p-botones { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); }
+  .p-botones .boton { justify-content: center; min-height: 2.75rem; padding-inline: var(--e-2); }
+  .p-contacto a { min-height: 2rem; }
+  .p-titulo-acc > .boton { display: none; }          /* en el móvil está el botón flotante */
+  .p-filtros { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-inline: calc(var(--margen) * -1); padding-inline: var(--margen); }
+  .p-filtros::-webkit-scrollbar { display: none; }
+  .p-filtro { flex: none; min-height: 2.5rem; }
+  .p-selector { flex: none; width: auto; min-width: 11rem; margin-left: 0; }
+  .p-gente li { min-height: 2.75rem; }
+  .p-sesion-cab { grid-template-columns: 3rem minmax(0, 1fr) auto; }
+
+  /* ventanas: suben desde abajo, a toda la pantalla de ancho */
+  #pn-modal, #pn-dialogo { align-items: end; }
+  #pn-modal .publicar__caja, #pn-dialogo .publicar__caja {
+    width: 100%; max-width: none; border-radius: 18px 18px 0 0; margin: 0;
+    max-height: 92vh; overflow-y: auto; padding-bottom: max(var(--e-5), env(safe-area-inset-bottom));
+  }
+  .p-visor-barra .boton { min-height: 2.5rem; }
+}
+#pn-detalle { scroll-margin-top: 5rem; }
+
+/* Aviso del panel publicado sin base de datos (tools/publicar.js) */
+.p-modo-prueba {
+  margin: 0; padding: 0.35rem var(--margen); text-align: center;
+  background: var(--alerta); color: var(--tinta); font-size: 0.75rem; font-weight: 700;
+}
+/* «Publicar» con su texto también en el móvil: es la acción principal */
+.p-publicar { gap: var(--e-2); white-space: nowrap; }

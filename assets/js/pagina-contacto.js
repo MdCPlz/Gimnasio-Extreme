@@ -174,14 +174,25 @@
       datos[n.name] = n.type === 'checkbox' ? n.checked : n.value.trim();
     });
 
-    fetch(R('/api/contacto'), {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(datos)
-    }).then(function (r) {
-      if (!r.ok) throw new Error('respuesta ' + r.status);
-      return r.json().catch(function () { return {}; });
-    }).then(function () {
+    /* Con base de datos, el mensaje queda en el panel; el correo es un extra */
+    var D = window.XD, enBase = !!(D && D.activo);
+    function porCorreo() {
+      return fetch(R('/api/contacto'), {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(datos)
+      }).then(function (r) {
+        if (!r.ok) throw new Error('respuesta ' + r.status);
+        return r.json().catch(function () { return {}; });
+      });
+    }
+    var envio = !enBase ? porCorreo() : D.enviarMensaje(datos).then(function (r) {
+      if (r.ok) { porCorreo().catch(function () {}); return r; }
+      if (r.red) return porCorreo();
+      var fallo = new Error(r.error); fallo.explicado = true; throw fallo;
+    });
+
+    envio.then(function () {
       boton.removeAttribute('data-cargando');
       exito.hidden = false;
       exito.scrollIntoView({ block: 'center', behavior: 'smooth' });
@@ -191,8 +202,14 @@
         n.removeAttribute('data-visible');
       });
       if (T) T.mide('contacto_enviado', { asunto: datos.asunto });
-    }).catch(function () {
+    }).catch(function (fallo) {
       boton.removeAttribute('data-cargando');
+      if (fallo && fallo.explicado) {
+        error.hidden = false;
+        error.querySelector('span').textContent = fallo.message;
+        error.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        return;
+      }
       /* Sin función de correo publicada: le damos una salida real, no un «error». */
       var asunto = encodeURIComponent('Web · ' + (datos.asunto || 'Consulta'));
       var cuerpo = encodeURIComponent(

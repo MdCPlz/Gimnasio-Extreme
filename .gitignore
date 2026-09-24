@@ -1,4 +1,13 @@
 .DS_Store
+Thumbs.db
+desktop.ini
 .env
 node_modules/
 *.log
+
+# Carpetas de publicación y enlace con Vercel
+dist/
+.vercel/
+
+# Página de pruebas del panel (se genera con tools/generar-prueba.js)
+tools/panel-prueba.html

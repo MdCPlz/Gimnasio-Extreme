@@ -158,8 +158,8 @@
     hueco.addEventListener('click', function (e) {
       var b = e.target.closest('[data-cancelar]');
       if (!b) return;
-      S.cancela(b.getAttribute('data-cancelar'));
-      pinta();
+      b.disabled = true;
+      S.cancela(b.getAttribute('data-cancelar')).then(pinta);
     });
   }
 

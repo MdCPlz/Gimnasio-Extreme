@@ -24,15 +24,17 @@
     };
   }
 
-  /* Menú principal: una sola fuente para cabecera, menú móvil y pie. */
+  /* Menú principal: una sola fuente para cabecera, menú móvil, pie y 404.
+     «Reservar» y «Área de socio» no van en la lista: son botones aparte,
+     siempre a la vista. El logotipo lleva al inicio. */
   var MENU = [
-    { href: '/index.html',     texto: 'Inicio' },
-    { href: '/clases.html',    texto: 'Clases' },
-    { href: '/tarifas.html',   texto: 'Cuotas' },
-    { href: '/horarios.html',  texto: 'Horarios' },
-    { href: '/centros.html',   texto: 'Centros' },
-    { href: '/reservar.html',  texto: 'Reservar' },
-    { href: '/contacto.html',  texto: 'Contacto' }
+    { href: '/index.html',     texto: 'Inicio',    i: 'fuego',      sub: 'Portada' },
+    { href: '/clases.html',    texto: 'Clases',    i: 'pesa',       sub: 'Más de 40 clases a la semana' },
+    { href: '/tarifas.html',   texto: 'Cuotas',    i: 'tarjeta',    sub: 'Una cuota, los tres gimnasios' },
+    { href: '/horarios.html',  texto: 'Horarios',  i: 'calendario', sub: 'Cuadro de clases y reserva de plaza' },
+    { href: '/centros.html',   texto: 'Centros',   i: 'pin',        sub: 'Dónde estamos en Burgos' },
+    { href: '/galeria.html',   texto: 'Galería',   i: 'ampliar',    sub: 'Las salas por dentro' },
+    { href: '/contacto.html',  texto: 'Contacto',  i: 'correo',     sub: 'Escríbenos o llámanos' }
   ];
 
   function esActual(href) {
@@ -46,7 +48,8 @@
   function pintaCabecera() {
     var hueco = $('[data-cabecera]');
     if (!hueco) return;
-    var logo = B.marca.logo;
+    var logo = B.marca.logo, c = B.contacto;
+    var enReservar = esActual('/reservar.html'), enSocio = esActual('/area-socio.html');
 
     hueco.outerHTML =
       '<a class="saltar" href="#principal">Saltar al contenido</a>' +
@@ -57,33 +60,43 @@
               'width="169" height="84" alt="' + esc(logo.alt) + '">' +
           '</a>' +
           '<nav class="navegacion" aria-label="Principal">' +
-            MENU.map(function (m) {
+            MENU.slice(1).map(function (m) {
               return '<a href="' + esc(R(m.href)) + '"' + (esActual(m.href) ? ' aria-current="page"' : '') + '>' +
                 esc(m.texto) + '</a>';
             }).join('') +
           '</nav>' +
           '<div class="cabecera__acciones">' +
-            '<a class="cabecera__tel" href="tel:' + esc(B.contacto.telefonoTel) + '">' +
-              icono('telefono', 18) + '<span>' + esc(B.contacto.telefono) + '</span></a>' +
-            '<a class="boton boton--pequeno" href="' + R('/area-socio.html') + '">Área de socio</a>' +
+            '<a class="cabecera__tel" href="tel:' + esc(c.telefonoTel) + '">' +
+              icono('telefono', 18) + '<span>' + esc(c.telefono) + '</span></a>' +
+            '<a class="cabecera__socio" href="' + R('/area-socio.html') + '"' + (enSocio ? ' aria-current="page"' : '') + '>' +
+              icono('persona', 18) + '<span>Área de socio</span></a>' +
+            '<a class="boton boton--pequeno cabecera__reservar" href="' + R('/reservar.html') + '"' +
+              (enReservar ? ' aria-current="page"' : '') + '>Reservar<span> visita</span></a>' +
             '<button class="hamburguesa" type="button" aria-expanded="false" aria-controls="menu-movil" ' +
               'aria-label="Abrir el menú"><span></span><span></span><span></span></button>' +
           '</div>' +
         '</div>' +
       '</header>' +
       '<div class="menu" id="menu-movil" data-abierto="false" inert>' +
+        '<p class="menu__estado"><i></i>Abierto ahora · ' + esc(B.horario.resumen) + '</p>' +
         '<nav aria-label="Menú">' +
           MENU.map(function (m, i) {
             return '<a href="' + esc(R(m.href)) + '"' + (esActual(m.href) ? ' aria-current="page"' : '') +
-              ' style="animation-delay:' + (60 + i * 45) + 'ms"><span>' + P.pad(i + 1) + '</span>' +
-              esc(m.texto) + '</a>';
+              ' style="animation-delay:' + (40 + i * 35) + 'ms">' +
+              '<span class="menu__icono">' + icono(m.i, 20) + '</span>' +
+              '<span class="menu__txt"><b>' + esc(m.texto) + '</b><small>' + esc(m.sub) + '</small></span>' +
+              icono('derecha', 16) + '</a>';
           }).join('') +
         '</nav>' +
         '<div class="menu__pie">' +
-          '<a class="boton boton--ancho" href="' + R('/tarifas.html') + '">Ver las cuotas</a>' +
-          '<a class="boton boton--fantasma boton--ancho" href="tel:' + esc(B.contacto.telefonoTel) + '">' +
-            icono('telefono', 18) + ' ' + esc(B.contacto.telefono) + '</a>' +
-          '<p>' + esc(B.horario.resumen) + ' · ' + B.centros.length + ' centros en Burgos</p>' +
+          '<a class="boton boton--ancho" href="' + R('/reservar.html') + '">' + icono('calendario', 18) + ' Reservar una visita</a>' +
+          '<div class="menu__atajos">' +
+            '<a href="' + R('/area-socio.html') + '">' + icono('persona', 20) + '<span>Área de socio</span></a>' +
+            '<a href="tel:' + esc(c.telefonoTel) + '">' + icono('telefono', 20) + '<span>Llamar</span></a>' +
+            '<a href="' + esc(c.altaOnline) + '" target="_blank" rel="noopener noreferrer">' + icono('ok', 20) +
+              '<span>Darse de alta</span></a>' +
+          '</div>' +
+          '<p>' + B.centros.length + ' centros en Burgos · ' + esc(c.telefono) + '</p>' +
         '</div>' +
       '</div>';
 
@@ -103,10 +116,11 @@
       menu.setAttribute('data-abierto', String(v));
       if (v) { menu.removeAttribute('inert'); } else { menu.setAttribute('inert', ''); }
       document.body.classList.toggle('sin-scroll', v);
+      document.documentElement.classList.toggle('menu-abierto', v);
       if (v) {
         ultimoFoco = document.activeElement;
         var primero = $('a', menu);
-        if (primero) setTimeout(function () { primero.focus(); }, 60);
+        if (primero) setTimeout(function () { primero.focus({ preventScroll: true }); }, 60);
       } else if (ultimoFoco) { ultimoFoco.focus(); }
     }
 
@@ -114,6 +128,13 @@
     menu.addEventListener('click', function (e) { if (e.target.closest('a')) alterna(false); });
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape' && abierto) alterna(false);
+      /* el foco no se escapa del menú abierto: Tab da la vuelta entre sus enlaces y el botón */
+      if (e.key === 'Tab' && abierto) {
+        var focos = [boton].concat($$('a', menu));
+        var i = focos.indexOf(document.activeElement);
+        if (e.shiftKey && i <= 0) { e.preventDefault(); focos[focos.length - 1].focus(); }
+        else if (!e.shiftKey && i === focos.length - 1) { e.preventDefault(); focos[0].focus(); }
+      }
     });
     window.addEventListener('resize', retrasa(function () {
       if (abierto && window.innerWidth >= 1024) alterna(false);
@@ -177,9 +198,9 @@
             '<div><h4>Socios</h4><ul>' +
               '<li><a href="' + R('/area-socio.html') + '">Área de socio</a></li>' +
               '<li><a href="' + R('/horarios.html') + '">Cuadro de clases</a></li>' +
+              '<li><a href="' + R('/reservar.html') + '">Reservar una visita</a></li>' +
               '<li><a href="' + esc(c.altaOnline) + '" target="_blank" rel="noopener noreferrer">Darse de alta</a></li>' +
               '<li><a href="mailto:' + esc(B.equipo.empleo.email) + '">Trabaja con nosotros</a></li>' +
-              '<li><a href="' + R('/galeria.html') + '">Galería</a></li>' +
             '</ul></div>' +
             '<div><h4>Los tres centros</h4>' + centros + '</div>' +
           '</div>' +

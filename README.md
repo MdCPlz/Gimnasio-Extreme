@@ -1,13 +1,14 @@
 # Gimnasios Xtreme Burgos — web
 
-Sitio estático en HTML, CSS y JavaScript sin frameworks. Se sube tal cual por FTP
-o se arrastra a cualquier alojamiento. **No hay que compilar nada.**
+Sitio estático en HTML, CSS y JavaScript sin frameworks, con panel de gestión y base
+de datos en Supabase. **No hay que compilar nada**: `tools/publicar.js` solo copia
+archivos y mete el contenido publicado.
 
 ---
 
 ## Lo primero: qué hay que confirmar antes de publicar
 
-Está todo marcado con ⚠ dentro de `lib/manifest.js`. Resumido:
+Está todo marcado con ⚠ dentro de `lib/manifest.js` y en la sección **Repaso** del panel. Resumido:
 
 | Qué | Estado | Dónde se cambia |
 |---|---|---|
@@ -51,81 +52,135 @@ precio inventado. Si algún día el club rebaja de verdad una cuota, se rellena
 
 ---
 
-## Cómo se cambia el contenido
+## En internet
 
-**Todo** vive en un único archivo: **`lib/manifest.js`**. Ni un precio ni un
-teléfono están repartidos por el código. Hay dos formas de tocarlo:
+Mismo sistema que la web de Nuria Peña (Casa Memoria Rural Viva): web y panel
+separados, cada uno en su repositorio y su proyecto de Vercel, y una base de
+datos de Supabase que comparten.
 
-### 1. A mano
-Abre `lib/manifest.js` con cualquier editor de texto, cambia lo que sea y guarda.
-Está comentado línea a línea.
+| | Dirección |
+|---|---|
+| Web | https://gimnasios-xtreme.vercel.app (hasta que se apunte el dominio) |
+| Panel | https://panel-gimnasios-xtreme.vercel.app (privado, no indexado) |
 
-### 2. Con el panel de gestión
-Abre `panel.html` y mete la clave (`xtreme2026`, se cambia dentro del propio
-panel o en `manifest.js → panel.clave`).
+Base de datos: proyecto de Supabase **gimnasios-xtreme** (su propia cuenta, no
+la de RACHA ni la de la Casa). La estructura entera está en `supabase/esquema.sql`.
+La web habla con ella por `lib/datos.js`; el panel, por `panel/gestion.js`.
+La conexión (dirección y clave **pública**) está en `lib/config.js`.
 
-**Cómo está organizado**
+> Con `lib/config.js` vacío la web funciona igual que antes, sin base: las
+> citas y los mensajes llegan solo por correo y las plazas de clase viven en el
+> dispositivo de cada socio. El panel, en cambio, necesita la base.
 
-- **Repaso** — lo primero que ves: la lista de lo que falta por confirmar antes
-  de publicar, con un botón que te lleva a arreglarlo. Cuando esté todo en
-  verde, la web está lista.
-- **Clases, Cuotas, Bonos, Horarios, Equipo, Centros, Galería, Reseñas** — cada
-  una es una lista a la izquierda y la ficha a la derecha, con **la tarjeta real
-  pintada al lado mientras escribes**. Se pueden añadir, duplicar, reordenar y
-  eliminar elementos, y hay buscador cuando la lista es larga.
-- **Ofertas, Portada, Horas punta, Contacto, SEO, Acceso** — formularios
-  normales para los textos y los ajustes.
+### Qué guarda la base de datos
 
-**Importar fotos.** En cualquier campo de imagen puedes arrastrar una foto o
-pulsar «Importar foto…». El panel la recorta al tamaño exacto que usa esa ficha,
-la convierte a **WebP + JPG** y te descarga los dos archivos ya optimizados y con
-el nombre correcto. La ruta se rellena sola; a ti sólo te queda **copiar los dos
-archivos a `assets/img/`**. El panel te recuerda cuáles faltan por copiar.
+| Tabla | Qué es | Quién escribe |
+|---|---|---|
+| `citas` | Visitas, días de prueba, valoraciones… (reservar.html) | La web (función `crear_cita`) y el panel |
+| `inscripciones` | Plazas en clases dirigidas (horarios.html) | La web (`apuntarse`, `soltar_plaza`) y el panel |
+| `mensajes` | Formulario de contacto | La web (`enviar_mensaje`) |
+| `contenido` | Todo el manifiesto: clases, cuotas, horarios, textos… | Solo el panel (`publicar`) |
+| `versiones` | Las 30 últimas publicaciones, para volver atrás | Automático |
+| `admins` | Correos con acceso al panel | A mano, en Supabase |
 
-**Publicar.** Botón *Publicar* (o ⌘S). Te explica los tres pasos y te descarga el
-`manifest.js`. Lo subes a `lib/` y ya está en la web.
+Sin sesión (la web) solo se ven huecos ocupados y plazas cogidas, **sin
+nombres**, y solo se puede crear. Las funciones comprueban en el servidor que la
+hora esté dentro de las franjas, que la clase exista en el horario publicado y
+que quede aforo: no se puede reservar saltándose la web.
 
-> Los cambios se guardan solos en tu navegador: puedes cerrar y seguir mañana.
-> Cada campo que tocas enseña un «deshacer» que lo devuelve a como estaba
-> publicado, y hay un botón para descartarlo todo.
->
-> La clave sólo desbloquea el editor en tu dispositivo, **no protege el
-> servidor**: `manifest.js` viaja al navegador y cualquiera puede leerla. Si no
-> quieres que el panel sea accesible desde internet, **no subas `panel.html`** o
-> protégelo con la autenticación del alojamiento.
+Los correos de aviso (`api/`, con Resend) siguen funcionando igual; ahora son
+un extra: si fallan, la cita o el mensaje ya está guardado y sale en el panel.
+
+### Publicar
+
+Dos repositorios de GitHub, cada uno conectado a su proyecto de Vercel:
+
+| GitHub | Vercel | Qué publica |
+|---|---|---|
+| `MdCPlz/Gimnasio-Extreme` (este) | `gimnasios-xtreme` | la web: Vercel ejecuta `tools/publicar.js` y sirve solo `dist/gimnasios-xtreme` (ver `vercel.json`); las funciones de `api/` las monta aparte |
+| `MdCPlz/panel-gimnasios-xtreme` | `panel-gimnasios-xtreme` | el panel, tal cual |
+
+**El código de la web** se publica solo con cada `git push` a este repositorio.
+
+**El contenido** (precios, clases, horarios, textos, fotos) se publica desde el
+panel con el botón *Publicar*: se guarda en la base de datos y el panel llama al
+*Deploy Hook* de Vercel, que reconstruye la web con lo publicado. Tarda un minuto.
+El Deploy Hook se crea en Vercel → proyecto de la web → Settings → Git → Deploy
+Hooks (rama `main`) y se pega en el panel, sección **Publicación**.
+
+**El panel** se edita aquí, en `panel/`, y se publica así:
+
+```bash
+node tools/publicar.js https://gimnasios-xtreme.vercel.app
+cd dist/panel-gimnasios-xtreme
+git add -A && git commit -m "Descripción del cambio" && git push
+```
+
+`dist/panel-gimnasios-xtreme` es una copia de trabajo del repositorio del panel:
+el script la regenera sin tocar su `.git`. El repositorio del panel no se edita a mano.
+
+> **Ojo con Vercel y este repositorio.** Sin el `vercel.json` de la raíz,
+> Vercel publicaría el repositorio entero, con `panel/`, `tools/`, `supabase/`
+> y este README a la vista. Le pasó a la web de la Casa el 24/09/2026. No borrarlo.
+> Tras cualquier cambio de despliegue, comprobar que `/panel/`, `/tools/` y
+> `/README.md` dan 404 en la web.
+
+### Dar acceso al panel
+
+1. Supabase → Authentication → Users → Add user → Create new user: correo,
+   contraseña y *Auto Confirm User* marcado.
+2. Ese correo tiene que estar en la lista de administración:
+   `insert into public.admins (email) values ('correo@ejemplo.es');`
+
+Una cuenta que no esté en `admins` no ve ni cambia nada aunque tenga contraseña.
+
+### Probar en local
+
+```bash
+node tools/servidor.js
+```
+
+Web en http://localhost:8766/ y panel en http://localhost:8766/panel/.
+Para ver el panel **sin cuenta ni base de datos**, con datos de ejemplo:
+`node tools/generar-prueba.js` y abrir http://localhost:8766/tools/panel-prueba.html
+(en la consola, `__simulaWeb()` hace llegar una cita y un mensaje como desde la web).
 
 ---
 
-## Subir la web
+## El panel
 
-### Por FTP (lo más simple)
-Arrastra **todo el contenido de esta carpeta** a la raíz pública del alojamiento
-(`public_html`, `www` o similar). Ya está.
+Se entra con correo y contraseña. Está pensado también para el móvil y se puede
+instalar como app («Añadir a pantalla de inicio»).
 
-Funciona igual abriendo `index.html` con doble clic, subida a la raíz del dominio
-o dentro de una subcarpeta: todas las rutas son relativas.
+**Día a día** — lo que llega de la web aparece al momento, con aviso:
 
-**Sin configurar nada más funciona todo** menos tres cosas, que necesitan
-funciones de servidor (ver abajo): el envío de los formularios por correo, la
-nota de Google en vivo y la ocupación real. Cuando fallan, la web no se rompe:
-el formulario ofrece abrir el correo con el mensaje ya escrito, la nota sale del
-manifiesto y el gráfico usa el patrón histórico.
+- **Hoy** — citas de hoy, clases de hoy con su gente y mensajes sin leer.
+- **Citas** — próximas, de hoy, pasadas y canceladas, por centro. Cada una se
+  marca como atendida, no vino o cancelada (al cancelar, la hora vuelve a quedar
+  libre en la web). *Nueva cita* para las que llegan por teléfono o en recepción.
+- **Plazas en clases** — quién se ha apuntado a cada clase de las dos próximas
+  semanas, con el aforo, y un botón para liberar una plaza.
+- **Mensajes** — el formulario de contacto, con *Responder*.
 
-### Con funciones de servidor (Vercel, Netlify…)
-La carpeta `api/` son funciones serverless en JavaScript. Si el alojamiento las
-soporta, se activan solas al subir. Hay que poner las variables de entorno del
-archivo `.env.example` en el panel del proveedor.
+**La web** — el editor de contenido de siempre:
 
-**Las claves nunca van en el repositorio.** `.gitignore` ya excluye `.env`.
+- **Repaso** — lo que falta por confirmar antes de salir a producción.
+- **Clases, Cuotas, Bonos, Horarios, Equipo, Centros, Galería, Reseñas** — lista
+  a la izquierda y ficha a la derecha, con **la tarjeta real pintada al lado
+  mientras escribes**. Se pueden añadir, duplicar, reordenar y eliminar.
+- **Ofertas, Portada, Horas punta, Contacto, SEO** — formularios normales.
 
-| Variable | Para qué | ¿Obligatoria? |
-|---|---|---|
-| `RESEND_API_KEY` | Enviar los correos de contacto y reservas | Para que lleguen los avisos |
-| `CORREO_DESTINO` | A dónde llegan | Sí, si usas el correo |
-| `CORREO_ORIGEN` | Remitente verificado | Sí, si usas el correo |
-| `GOOGLE_MAPS_API_KEY` | Nota de Google en vivo | No |
-| `GOOGLE_PLACE_ID` | Ficha del negocio | No |
-| `OCUPACION_URL` | Ocupación real de los tornos | No |
+**Importar fotos.** En cualquier campo de imagen se arrastra una foto o se pulsa
+«Importar foto…». El panel la recorta al tamaño exacto de esa ficha, la convierte
+a WebP + JPG y **la sube sola** al almacén de fotos de Supabase. No hay que copiar
+nada a ningún sitio: sale en la web al publicar.
+
+**Publicar** (o Ctrl+S). Los cambios se guardan como borrador en el dispositivo
+mientras se edita; cada campo tocado tiene su «deshacer». Al publicar, se guardan
+en la base de datos y la web se reconstruye sola.
+
+**Publicación** — el Deploy Hook de Vercel, el **historial** de las 30 últimas
+publicaciones con «Volver a esta», y una copia descargable del contenido.
 
 ---
 
@@ -142,10 +197,12 @@ reservar.html         Cita previa: servicio, centro, día y hora
 contacto.html         Formulario validado y datos de los tres centros
 galeria.html          Mosaico con visor ampliable
 area-socio.html       Acceso de socio: sus reservas
-panel.html            Mini-CMS (no lo subas si no quieres que sea público)
 404.html              Página de error
 
-lib/manifest.js       ← TODO EL CONTENIDO ESTÁ AQUÍ
+lib/manifest.js       Contenido de partida. En producción lo sustituye el que
+                      se publica desde el panel (lo genera tools/publicar.js)
+lib/config.js         Conexión con Supabase (clave pública)
+lib/datos.js          Lo que la web lee y escribe en la base de datos
 lib/plantillas.js     Utilidades: iconos, formatos, fechas, rutas
 assets/css/           Hoja de estilo y tipografías
 assets/js/            Un archivo por pieza del sitio
@@ -154,6 +211,11 @@ assets/fonts/         Archivo e Inter, servidas desde el propio sitio
 assets/video/         Aquí va el vídeo de la portada (ver LEEME.txt)
 api/                  Funciones de servidor (correo, nota de Google, ocupación)
 legal/                Aviso legal, privacidad y cookies
+
+panel/                El panel (se publica aparte, ver «Publicar»)
+supabase/esquema.sql  La base de datos entera: tablas, reglas y funciones
+tools/                Publicar, servidor local y prueba del panel. No se publica
+vercel.json           Cómo construye Vercel la web. No borrar
 ```
 
 ---
@@ -164,11 +226,10 @@ legal/                Aviso legal, privacidad y cookies
 no exista, la portada se queda con la foto de fondo y se ve perfecta. Instrucciones
 en `assets/video/LEEME.txt`.
 
-**Las reservas de clase y el área de socio** funcionan en el navegador del
-visitante: no hay base de datos. Al club le llega un correo por cada plaza
-cogida o liberada. Si algún día necesitan un sistema de verdad con aforo
-compartido entre todos los socios, hay que conectar `api/inscripcion.js` a su
-sistema de gestión.
+**Las reservas de clase** van contra la base de datos: el aforo es compartido
+por todos los socios y el club las ve en el panel. El socio se identifica solo
+con su correo (no hay contraseñas de socio) y la web recuerda sus reservas en
+su dispositivo. El alta, la cuota y los recibos siguen en el sistema del club (Provis).
 
 **El mapa de Google no se carga** hasta que el visitante acepta las cookies de
 mapas. Mientras tanto sale un recuadro con un botón y un enlace a Google Maps.

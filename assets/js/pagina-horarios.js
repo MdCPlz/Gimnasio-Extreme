@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  var B = window.__BRAND__, P = window.XP, T = window.XT, S = window.XS;
+  var B = window.__BRAND__, P = window.XP, T = window.XT, S = window.XS, D = window.XD;
   var hueco = document.querySelector('[data-agenda]');
   if (!B || !P || !S || !hueco) return;
 
@@ -179,26 +179,41 @@
         return;
       }
       a.setAttribute('data-cargando', 'true');
-      var res = S.apunta(datos);
-      a.removeAttribute('data-cargando');
-      if (!res.ok && res.motivo === 'sin-espacio') {
-        alert('Tu navegador no deja guardar la reserva (¿navegación privada?). ' +
-          'Llámanos al ' + B.contacto.telefono + ' y te apuntamos nosotros.');
-        return;
-      }
-      if (window.XT) window.XT.mide('reserva_clase', { clase: datos.clase, centro: datos.centro });
-      pintaSesiones();
+      a.disabled = true;
+      S.apunta(datos).then(function (res) {
+        a.removeAttribute('data-cargando');
+        a.disabled = false;
+        if (!res.ok && res.motivo === 'sin-espacio') {
+          alert('Tu navegador no deja guardar la reserva (¿navegación privada?). ' +
+            'Llámanos al ' + B.contacto.telefono + ' y te apuntamos nosotros.');
+          return;
+        }
+        if (!res.ok && res.motivo === 'base') {
+          alert((res.error || 'No se ha podido reservar.') +
+            '\n\nSi no lo consigues, llámanos al ' + B.contacto.telefono + '.');
+          pintaSesiones();
+          return;
+        }
+        if (res.ok && window.XT) window.XT.mide('reserva_clase', { clase: datos.clase, centro: datos.centro });
+        pintaSesiones();
+      });
       return;
     }
     var c = e.target.closest('[data-cancelar]');
     if (c) {
-      S.cancela(c.getAttribute('data-cancelar'));
-      pintaSesiones();
+      c.disabled = true;
+      S.cancela(c.getAttribute('data-cancelar')).then(pintaSesiones);
     }
   });
 
   document.addEventListener('xt:socio', function () { pintaQuien(); pintaSesiones(); });
 
   pinta();
+  /* Con base de datos, las plazas libres son las de todos los socios y se
+     refrescan solas (cada 30 s y al volver a la pestaña). */
+  if (D && D.activo) {
+    D.alCambiar(function () { if (document.getElementById('ag-sesiones')) pintaSesiones(); });
+    D.vigilaPlazas();
+  }
   if (T) T.montaApariciones();
 })();

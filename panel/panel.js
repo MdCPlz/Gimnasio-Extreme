@@ -1,36 +1,50 @@
 /* =============================================================================
-   PANEL DE GESTIÓN
+   PANEL DE GESTIÓN · Gimnasios Xtreme
    -----------------------------------------------------------------------------
-   Edita el contenido del sitio EN ESTE NAVEGADOR y al final te descarga el
-   lib/manifest.js listo para subir. Trabaja sobre un borrador guardado en tu
-   dispositivo: puedes cerrar y seguir mañana.
+   Para lo que el club cambia a menudo: la hora de las clases (Horarios), las
+   actividades que se dan (Actividades) y los precios (Cuotas y Bonos).
+   El resto de la web se cambia en lib/manifest.js.
 
-   Cómo está montado:
-   · Un esquema (COLECCIONES y BLOQUES) describe qué campos tiene cada cosa.
-     Todo lo demás —lista, formulario, vista previa— se genera de ahí, así que
-     añadir un campo nuevo es añadir una línea al esquema.
+   Mismo sistema que el panel de la Casa Memoria Rural Viva:
+   · Se entra con correo y contraseña (Supabase Auth). Solo pasan las cuentas
+     que estén en la tabla «admins»: lo comprueba la base de datos.
+   · Se edita sobre un borrador guardado en este dispositivo. «Publicar» lo
+     guarda en la base de datos y Vercel reconstruye la web sola en un minuto.
+     Cada publicación deja la anterior en el historial, por si hay que volver.
+
+   Cómo está montado el editor:
+   · Un esquema (COLECCIONES) describe qué campos tiene cada cosa. Todo lo
+     demás —lista, formulario, vista previa— se genera de ahí, así que añadir
+     un campo nuevo es añadir una línea al esquema.
    · Las colecciones van en lista + detalle, con la ficha real pintada al lado
-     mientras escribes: se ve lo que va a salir publicado, no un formulario a ciegas.
-
-   La clave sólo desbloquea el editor en este dispositivo: no protege el servidor,
-   porque no hay servidor. Si no quieres que sea público, no subas panel.html.
+     mientras escribes: se ve lo que va a salir publicado.
+   Todo lo que lee y guarda pasa por window.Gestion (panel/gestion.js).
    ========================================================================== */
 (function () {
   'use strict';
 
-  var B = window.__BRAND__, P = window.XP, C = window.XC;
+  var B = window.__BRAND__, P = window.XP, C = window.XC, G = window.Gestion;
   var hueco = document.querySelector('[data-panel]');
   if (!B || !P || !hueco) return;
 
   var esc = P.esc, icono = P.icono, R = P.ruta;
-  var CLAVE_SESION = 'xtreme.panel.abierto';
   var CLAVE_BORRADOR = 'xtreme.panel.borrador';
 
   function clona(o) { return JSON.parse(JSON.stringify(o)); }
 
   var datos = P.almacen.lee(CLAVE_BORRADOR, null) || clona(B);
   var sucio = !!P.almacen.lee(CLAVE_BORRADOR, null);
-  var seccion = 'inicio';
+  var seccion = 'horarios';
+  var correo = '';
+
+  /* B es el contenido PUBLICADO. Se cambia en su sitio (no se sustituye el
+     objeto) porque plantillas.js y componentes.js guardan esa misma referencia. */
+  function reemplazaB(nuevo) {
+    var k;
+    for (k in B) if (Object.prototype.hasOwnProperty.call(B, k)) delete B[k];
+    nuevo = clona(nuevo);
+    for (k in nuevo) B[k] = nuevo[k];
+  }
   var indice = 0;          // elemento seleccionado dentro de la colección
   var filtro = '';
 
@@ -55,7 +69,7 @@
     var e = document.getElementById('pn-estado');
     if (e) {
       e.setAttribute('data-sucio', 'true');
-      e.querySelector('span').textContent = 'Sin publicar';
+      e.querySelector('span').textContent = 'Web: cambios sin publicar';
     }
   }
 
@@ -199,363 +213,88 @@
       ]
     },
 
-    equipo: {
-      titulo: 'Equipo',
-      icono: 'persona',
-      intro: '⚠ Estas fichas son de ejemplo. Pide al club los nombres, las fotos y ' +
-             'la titulación reales antes de publicar.',
-      ruta: 'equipo.miembros',
-      nombre: function (m) { return m.nombre; },
-      pie: function (m) { return m.especialidad; },
-      foto: function (m) { return m.foto; },
-      vista: function (m) { return C.monitor(m); },
-      nueva: function () {
-        return { id: 'monitor-' + Date.now(), nombre: 'Nombre', especialidad: 'Sala',
-                 bio: '', foto: '/assets/img/equipo-1.webp',
-                 fotoFallback: '/assets/img/equipo-1.jpg', alt: 'Monitor' };
-      },
-      grupos: [
-        { titulo: 'Quién es', dobles: true, campos: [
-          { c: 'nombre', e: 'Nombre', t: 'texto' },
-          { c: 'especialidad', e: 'Especialidad', t: 'texto' },
-          { c: 'bio', e: 'Presentación', t: 'area', ancho: true,
-            ayuda: 'Dos frases con algo concreto: qué clase lleva, en qué ayuda.' }
-        ] },
-        { titulo: 'Foto', dobles: true, campos: [
-          { c: 'foto', e: 'Foto', t: 'imagen', par: 'fotoFallback' },
-          { c: 'fotoFallback', e: 'Respaldo JPG (se rellena solo al importar)', t: 'imagen' },
-          { c: 'alt', e: 'Descripción de la foto', t: 'texto', ancho: true }
-        ] }
-      ]
-    },
-
-    centros: {
-      titulo: 'Centros',
-      icono: 'pin',
-      intro: 'Los tres gimnasios. El primero es el que sale como principal en el mapa ' +
-             'y en los datos estructurados.',
-      ruta: 'centros',
-      nombre: function (x) { return x.nombre; },
-      pie: function (x) { return x.calle; },
-      foto: function (x) { return x.foto; },
-      vista: function (x) { return C.centro(x); },
-      nueva: function () {
-        return { id: 'centro-' + Date.now(), nombre: 'Centro nuevo', zona: '', calle: '',
-                 detalle: '', cp: '09005', ciudad: 'Burgos', telefono: '', telefonoTel: '',
-                 horario: '24 horas, todos los días del año',
-                 coords: { lat: 42.34385, lng: -3.69795 }, maps: '', mapaEmbed: '',
-                 foto: '/assets/img/centro-1.webp', fotoFallback: '/assets/img/centro-1.jpg',
-                 alt: 'Centro nuevo', principal: false };
-      },
-      grupos: [
-        { titulo: 'Identificación', dobles: true, campos: [
-          { c: 'nombre', e: 'Nombre', t: 'texto' },
-          { c: 'zona', e: 'Zona', t: 'texto', ayuda: 'El barrio o la plaza: así lo ubica la gente.' }
-        ] },
-        { titulo: 'Dirección y contacto', dobles: true, campos: [
-          { c: 'calle', e: 'Calle', t: 'texto' },
-          { c: 'detalle', e: 'Detalle', t: 'texto', ayuda: '«con Plaza de España», por ejemplo.' },
-          { c: 'cp', e: 'Código postal', t: 'texto' },
-          { c: 'ciudad', e: 'Ciudad', t: 'texto' },
-          { c: 'telefono', e: 'Teléfono', t: 'texto' },
-          { c: 'telefonoTel', e: 'Teléfono para marcar', t: 'texto',
-            ayuda: 'Sin espacios y con prefijo: +34947054800' },
-          { c: 'horario', e: 'Horario', t: 'texto', ancho: true }
-        ] },
-        { titulo: 'Mapa', campos: [
-          { c: 'maps', e: 'Enlace de Google Maps', t: 'texto', ancho: true },
-          { c: 'mapaEmbed', e: 'Mapa incrustado', t: 'texto', ancho: true,
-            ayuda: 'En Google Maps: Compartir → Insertar un mapa → copia sólo la dirección del src.' }
-        ] },
-        { titulo: 'Foto', dobles: true, campos: [
-          { c: 'foto', e: 'Foto', t: 'imagen', par: 'fotoFallback' },
-          { c: 'fotoFallback', e: 'Respaldo JPG (se rellena solo al importar)', t: 'imagen' },
-          { c: 'alt', e: 'Descripción de la foto', t: 'texto', ancho: true }
-        ] }
-      ]
-    },
-
-    galeria: {
-      titulo: 'Galería',
-      icono: 'ampliar',
-      intro: 'Las fotos del mosaico. La primera ocupa el doble en la rejilla, así que ' +
-             'conviene que sea la mejor.',
-      ruta: 'galeria.fotos',
-      nombre: function (f, i) { return f.alt || 'Foto'; },
-      pie: function (f) { return String(f.src || '').split('/').pop(); },
-      foto: function (f) { return f.src; },
-      nueva: function () {
-        return { src: '/assets/img/gal-01.webp', fallback: '/assets/img/gal-01.jpg',
-                 alt: 'Foto nueva', ancho: 1200, alto: 800 };
-      },
-      grupos: [
-        { titulo: 'Imagen', dobles: true, campos: [
-          { c: 'src', e: 'Foto', t: 'imagen', par: 'fallback', medida: [1200, 800] },
-          { c: 'fallback', e: 'Respaldo JPG (se rellena solo al importar)', t: 'imagen', medida: [1200, 800] },
-          { c: 'alt', e: 'Descripción de la foto', t: 'texto', ancho: true,
-            ayuda: 'Qué se ve. Es lo que lee quien no puede ver la imagen, y lo que sale bajo el visor.' },
-          { c: 'ancho', e: 'Ancho en píxeles', t: 'numero' },
-          { c: 'alto', e: 'Alto en píxeles', t: 'numero' }
-        ] }
-      ]
-    },
-
-    resenas: {
-      titulo: 'Reseñas',
-      icono: 'estrella',
-      intro: 'Las opiniones del carrusel. Las que apagues se quedan guardadas pero ' +
-             'no salen publicadas.',
-      ruta: 'resenas.opiniones',
-      nombre: function (o) { return o.autor; },
-      pie: function (o) { return o.estrellas + '★ · ' + String(o.texto).slice(0, 42) + '…'; },
-      marca: function (o) { return o.publicar === false ? 'Oculta' : ''; },
-      tono: function (o) { return o.publicar === false ? 'aviso' : ''; },
-      vista: function (o) { return C.resena(o); },
-      nueva: function () {
-        return { autor: 'Cliente de Google', estrellas: 5, texto: '', publicar: true };
-      },
-      grupos: [
-        { titulo: 'La opinión', dobles: true, campos: [
-          { c: 'autor', e: 'Quién la firma', t: 'texto' },
-          { c: 'estrellas', e: 'Estrellas', t: 'numero', min: 1, max: 5 },
-          { c: 'texto', e: 'Texto', t: 'area', ancho: true,
-            ayuda: 'Cópiala literal de Google. No la retoques: se nota.' },
-          { c: 'publicar', e: 'Sacarla en el carrusel', t: 'si-no', ancho: true }
-        ] }
-      ]
-    }
   };
+
+  /*   };
 
   /* Bloques sueltos (no son listas): formularios normales */
-  var BLOQUES = {
-    portada: {
-      titulo: 'Portada',
-      icono: 'pantalla',
-      intro: 'Lo primero que se ve: la presentación por scroll, el titular y los cuatro datos.',
-      grupos: [
-        { titulo: 'Titular', dobles: true, campos: [
-          { r: 'hero.titulillo', e: 'Rótulo pequeño', t: 'texto' },
-          { r: 'hero.palabraGigante', e: 'Palabra gigante del fondo', t: 'texto' },
-          { r: 'hero.titulo', e: 'Titular', t: 'area', ancho: true,
-            ayuda: 'Cada salto de línea es una línea. La última sale en lima.' },
-          { r: 'hero.subtitulo', e: 'Subtítulo', t: 'area', ancho: true }
-        ] },
-        { titulo: 'Botones', dobles: true, campos: [
-          { r: 'hero.ctaPrimario.texto', e: 'Botón principal', t: 'texto' },
-          { r: 'hero.ctaPrimario.href', e: 'A dónde lleva', t: 'texto' },
-          { r: 'hero.ctaSecundario.texto', e: 'Botón secundario', t: 'texto' },
-          { r: 'hero.ctaSecundario.href', e: 'A dónde lleva', t: 'texto' }
-        ] },
-        { titulo: 'Presentación al entrar', dobles: true, campos: function () {
-          var out = [{ r: 'intro.activa', e: 'Mostrar la presentación por scroll', t: 'si-no',
-            ancho: true,
-            ayuda: 'Se salta sola si el visitante ya la vio hoy o pide menos movimiento.' }];
-          (datos.intro.fotogramas || []).forEach(function (f, i) {
-            out.push({ r: 'intro.fotogramas.' + i + '.titulo', e: 'Pantalla ' + (i + 1) + ' · título', t: 'texto' });
-            out.push({ r: 'intro.fotogramas.' + i + '.texto', e: 'Pantalla ' + (i + 1) + ' · texto', t: 'texto' });
-          });
-          return out;
-        } },
-        { titulo: 'Vídeo de fondo', campos: [
-          { r: 'hero.video.activo', e: 'Usar vídeo de fondo', t: 'si-no',
-            ayuda: 'Si el archivo no existe se queda la foto. Instrucciones en assets/video/LEEME.txt' }
-        ] }
-      ]
-    },
+  /* Formularios sueltos (sin lista). Ahora no hay ninguno: el panel solo
+     lleva colecciones y el cuadro horario. */
+  var BLOQUES = {};
 
-    oferta: {
-      titulo: 'Oferta',
-      icono: 'etiqueta',
-      intro: 'La franja lima que cruza el sitio, y el aviso de precios pendientes.',
-      grupos: [
-        { titulo: 'Franja de promoción', campos: [
-          { r: 'promocion.activa', e: 'Mostrar la franja', t: 'si-no' },
-          { r: 'promocion.etiqueta', e: 'Pegatina', t: 'texto' },
-          { r: 'promocion.titulo', e: 'Titular', t: 'texto', ancho: true },
-          { r: 'promocion.texto', e: 'Texto', t: 'texto', ancho: true },
-          { r: 'promocion.cta.texto', e: 'Enlace', t: 'texto' },
-          { r: 'promocion.caduca', e: 'Caduca el', t: 'texto',
-            ayuda: 'AAAA-MM-DD. Al llegar la fecha, la franja desaparece sola. Vacío = sin caducidad.' }
-        ] },
-        { titulo: 'Descuentos por colectivo', dobles: true, campos: [
-          { r: 'tarifas.descuentosColectivo.0.nombre', e: 'Colectivo 1', t: 'texto' },
-          { r: 'tarifas.descuentosColectivo.0.porcentaje', e: 'Descuento (%)', t: 'numero' },
-          { r: 'tarifas.descuentosColectivo.1.nombre', e: 'Colectivo 2', t: 'texto' },
-          { r: 'tarifas.descuentosColectivo.1.porcentaje', e: 'Descuento (%)', t: 'numero' },
-          { r: 'tarifas.descuentosColectivo.2.nombre', e: 'Colectivo 3', t: 'texto' },
-          { r: 'tarifas.descuentosColectivo.2.porcentaje', e: 'Descuento (%)', t: 'numero' }
-        ] },
-        { titulo: 'Avisos', campos: [
-          { r: 'tarifas.aviso', e: 'Aviso rojo sobre los precios', t: 'texto', ancho: true,
-            ayuda: 'Déjalo VACÍO cuando los precios ya sean los definitivos.' },
-          { r: 'tarifas.letraPequena', e: 'Letra pequeña', t: 'area', ancho: true }
-        ] }
-      ]
-    },
-
-    contacto: {
-      titulo: 'Contacto',
-      icono: 'telefono',
-      intro: 'Teléfonos, correos y horario. Estos datos salen en la cabecera, el pie y ' +
-             'los formularios de todo el sitio.',
-      grupos: [
-        { titulo: 'Teléfono y correo', dobles: true, campos: [
-          { r: 'contacto.telefono', e: 'Teléfono principal', t: 'texto' },
-          { r: 'contacto.telefonoTel', e: 'Teléfono para marcar', t: 'texto',
-            ayuda: 'Sin espacios y con prefijo: +34947054800' },
-          { r: 'contacto.email', e: 'Correo de atención', t: 'texto',
-            ayuda: '⚠ Confirma cuál es. Aquí llegan los avisos de los formularios.' },
-          { r: 'contacto.emailReservas', e: 'Correo de reservas', t: 'texto' },
-          { r: 'equipo.empleo.email', e: 'Correo de empleo', t: 'texto' },
-          { r: 'contacto.whatsapp', e: 'WhatsApp', t: 'texto',
-            ayuda: 'Sólo números, con prefijo: 34947054800. Vacío = sin WhatsApp.' },
-          { r: 'contacto.altaOnline', e: 'Enlace de alta online', t: 'texto', ancho: true }
-        ] },
-        { titulo: 'Horario', campos: [
-          { r: 'horario.resumen', e: 'Resumen', t: 'texto', ancho: true },
-          { r: 'horario.recepcion', e: 'Horario de recepción', t: 'texto', ancho: true,
-            ayuda: '⚠ Pendiente de confirmar con el club.' },
-          { r: 'horario.nota', e: 'Nota', t: 'area', ancho: true }
-        ] }
-      ]
-    },
-
-    horaspunta: {
-      titulo: 'Horas punta',
-      icono: 'grafico',
-      intro: 'El gráfico de ocupación. Los umbrales deciden a partir de qué porcentaje ' +
-             'una hora se pinta en verde, en lima o en rojo.',
-      grupos: [
-        { titulo: 'Gráfico', dobles: true, campos: [
-          { r: 'ocupacion.activa', e: 'Mostrar el gráfico', t: 'si-no', ancho: true },
-          { r: 'ocupacion.titulo', e: 'Título', t: 'texto', ancho: true },
-          { r: 'ocupacion.texto', e: 'Texto', t: 'area', ancho: true },
-          { r: 'ocupacion.umbrales.tranquilo', e: 'Hasta qué % es «tranquilo»', t: 'numero' },
-          { r: 'ocupacion.umbrales.normal', e: 'Hasta qué % es «movido»', t: 'numero',
-            ayuda: 'Por encima de esto se pinta en rojo.' },
-          { r: 'ocupacion.actualizaCada', e: 'Refrescar cada (segundos)', t: 'numero' }
-        ] }
-      ]
-    },
-
-    seo: {
-      titulo: 'SEO y medición',
-      icono: 'lupa',
-      intro: 'Lo que Google enseña en los resultados y la analítica de visitas.',
-      grupos: [
-        { titulo: 'Buscadores', campos: [
-          { r: 'seo.titulo', e: 'Título', t: 'texto', ancho: true,
-            ayuda: 'Máximo 60 caracteres o Google lo corta.' },
-          { r: 'seo.descripcion', e: 'Descripción', t: 'area', ancho: true,
-            ayuda: 'Entre 140 y 160 caracteres.' }
-        ] },
-        { titulo: 'Medición', dobles: true, campos: [
-          { r: 'legal.analitica.id', e: 'ID de Google Analytics', t: 'texto',
-            ayuda: 'Vacío = no se carga nada de Google. Sólo se activa si el visitante acepta cookies.' },
-          { r: 'seo.verificacionGoogle', e: 'Verificación de Search Console', t: 'texto' }
-        ] }
-      ]
-    },
-
-    acceso: {
-      titulo: 'Acceso al panel',
-      icono: 'candado',
-      intro: 'La clave de este panel y el repositorio al que apunta el botón de GitHub.',
-      grupos: [
-        { titulo: 'Panel', dobles: true, campos: [
-          { r: 'panel.clave', e: 'Clave del panel', t: 'texto',
-            ayuda: 'Al cambiarla tendrás que volver a entrar con la nueva.' },
-          { r: 'panel.repo', e: 'Repositorio de GitHub', t: 'texto',
-            ayuda: 'usuario/repositorio. Sólo sirve para que el botón sepa a dónde ir.' }
-        ] }
-      ]
-    }
-  };
-
-  /* Lo que hay que confirmar antes de publicar. Cada uno sabe comprobarse solo. */
-  var PENDIENTES = [
-    { id: 'precios', t: 'Revisar los precios de las cuotas',
-      d: 'Tomados del sistema de altas del club el 1 de agosto de 2026. Compruébalos cada temporada.',
-      va: 'planes',
-      hecho: function () { return !String(datos.tarifas.aviso || '').trim(); } },
-    { id: 'equipo', t: 'Poner los monitores reales',
-      d: 'Nombres, fotos y titulación. Ahora hay fichas de ejemplo.',
-      va: 'equipo',
-      hecho: function () { return datos.equipo.demo === false; } },
-    { id: 'horario', t: 'Cargar el cuadro de clases del club',
-      d: 'El que hay es una propuesta coherente con «+40 clases a la semana».',
-      va: 'horarios',
-      hecho: function () { return datos.agenda.demo === false; } },
-    { id: 'correo', t: 'Confirmar el correo de atención',
-      d: 'El único correo público del club es el de empleo.',
-      va: 'contacto',
-      hecho: function () { return datos.contacto.email !== 'info@gimnasiosxtreme.es'; } },
-    { id: 'recepcion', t: 'Confirmar el horario de recepción',
-      d: 'El 24 h es para entrenar; recepción tiene su propio horario.',
-      va: 'contacto',
-      hecho: function () { return !/⚠|confirmar/i.test(datos.horario.recepcion || '') &&
-        datos.horario.recepcion !== B.horario.recepcion; } },
-    { id: 'analitica', t: 'Poner el ID de analítica',
-      d: 'Sin él no se mide nada. Opcional, pero conviene.',
-      va: 'seo',
-      hecho: function () { return !!String(datos.legal.analitica.id || '').trim(); } }
-  ];
-
-  /* ====================================================== PANTALLA DE CLAVE */
-  function pideClave() {
+  /* ===================================================== PANTALLA DE ACCESO */
+  function pideAcceso() {
     hueco.innerHTML =
       '<div class="contenedor" style="padding-block:clamp(3rem,10vh,7rem)">' +
         '<div class="acceso">' +
           '<div style="display:grid;place-items:center;margin-bottom:var(--e-5)">' +
-            '<span style="width:3rem;height:3rem;display:grid;place-items:center;border-radius:50%;' +
-              'background:var(--pizarra);color:var(--lima)">' + icono('candado', 22) + '</span></div>' +
-          '<h1>Panel de gestión</h1>' +
-          '<p>Edita las clases, las cuotas, las ofertas, el equipo y los textos. ' +
-            'Al terminar te descargas el archivo y lo subes.</p>' +
+            '<img src="' + esc(R(B.marca.logo.claro)) + '" alt="Gimnasios Xtreme" width="169" height="84" ' +
+              'style="width:8.5rem;height:auto"></div>' +
+          '<h1>Panel del gimnasio</h1>' +
+          '<p>Horarios, actividades y precios de la web.</p>' +
           '<form class="formulario" id="pn-form" novalidate>' +
-            '<div class="aviso aviso--error" id="pn-mal" hidden>' + icono('aviso', 18) +
-              '<span>Esa clave no es. Está en <code>lib/manifest.js</code>, en el bloque «panel».</span></div>' +
-            '<div class="campo"><label for="pn-clave">Clave</label>' +
-              '<input type="password" id="pn-clave" autocomplete="current-password" ' +
-                'placeholder="Clave del panel" autofocus></div>' +
-            '<button class="boton boton--ancho" type="submit">Abrir el panel</button>' +
+            '<div class="aviso aviso--error" id="pn-mal" hidden>' + icono('aviso', 18) + '<span></span></div>' +
+            '<div class="campo"><label for="pn-correo">Correo</label>' +
+              '<input type="email" id="pn-correo" autocomplete="username" placeholder="tu correo" autofocus></div>' +
+            '<div class="campo"><label for="pn-clave">Contraseña</label>' +
+              '<input type="password" id="pn-clave" autocomplete="current-password" placeholder="••••••••"></div>' +
+            '<button class="boton boton--ancho" type="submit" id="pn-entrar">Entrar</button>' +
           '</form>' +
-          '<p class="letra-pequena" style="margin-top:var(--e-5)">Esta clave sólo abre el editor ' +
-            'en este navegador; no protege el servidor. Si no quieres que el panel sea accesible ' +
-            'desde internet, no subas <code>panel.html</code> al alojamiento.</p>' +
+          '<p class="letra-pequena" style="margin-top:var(--e-5)">Acceso privado para el equipo del club.</p>' +
         '</div>' +
       '</div>';
 
     document.getElementById('pn-form').addEventListener('submit', function (e) {
       e.preventDefault();
-      if (document.getElementById('pn-clave').value === datos.panel.clave) {
-        sessionStorage.setItem(CLAVE_SESION, '1');
-        pintaPanel();
-      } else {
-        document.getElementById('pn-mal').hidden = false;
-        document.getElementById('pn-clave').select();
-      }
+      var mal = document.getElementById('pn-mal'), boton = document.getElementById('pn-entrar');
+      mal.hidden = true;
+      boton.disabled = true; boton.textContent = 'Entrando…';
+      G.entrar(document.getElementById('pn-correo').value.trim(), document.getElementById('pn-clave').value)
+        .then(function (r) {
+          boton.disabled = false; boton.textContent = 'Entrar';
+          if (r.error) {
+            mal.querySelector('span').textContent = r.error;
+            mal.hidden = false;
+            document.getElementById('pn-clave').select();
+            return;
+          }
+          arranca();
+        });
     });
+  }
+
+  function sinBase() {
+    hueco.innerHTML =
+      '<div class="contenedor" style="padding-block:clamp(3rem,10vh,7rem)"><div class="acceso">' +
+        '<h1>Falta conectar la base de datos</h1>' +
+        '<p>Rellena <code>lib/config.js</code> con la dirección y la clave pública del proyecto ' +
+          'de Supabase. Está explicado en el README.</p>' +
+      '</div></div>';
+  }
+
+  function arranca() {
+    var e = G.estado();
+    if (e.contenido) reemplazaB(e.contenido);
+    var b = P.almacen.lee(CLAVE_BORRADOR, null);
+    datos = b || clona(B);
+    sucio = !!b;
+    publicadoVisto = e.actualizado;
+    var inicial = (location.hash || '').slice(1);
+    if (NAV.some(function (x) { return x.id === inicial; })) seccion = inicial;
+    G.correo().then(function (c) { correo = c; var n = document.getElementById('pn-yo'); if (n) n.textContent = c; });
+    pintaPanel();
   }
 
   /* ============================================================ EL ARMAZÓN */
   var NAV = [
-    { id: 'inicio', n: 'Repaso', i: 'ok' },
-    { id: 'clases', n: 'Clases', i: 'fuego', cuenta: function () { return datos.clases.length; } },
+    { id: 'horarios', n: 'Horarios', i: 'reloj', cuenta: function () { return datos.agenda.horario.length; } },
+    { id: 'clases', n: 'Actividades', i: 'fuego', cuenta: function () { return datos.clases.length; } },
     { id: 'planes', n: 'Cuotas', i: 'tarjeta', cuenta: function () { return datos.tarifas.planes.length; } },
     { id: 'extras', n: 'Bonos', i: 'etiqueta', cuenta: function () { return datos.tarifas.extras.length; } },
-    { id: 'oferta', n: 'Ofertas', i: 'etiqueta' },
-    { id: 'horarios', n: 'Horarios', i: 'calendario', cuenta: function () { return datos.agenda.horario.length; } },
-    { id: 'equipo', n: 'Equipo', i: 'persona', cuenta: function () { return datos.equipo.miembros.length; } },
-    { id: 'centros', n: 'Centros', i: 'pin', cuenta: function () { return datos.centros.length; } },
-    { id: 'galeria', n: 'Galería', i: 'ampliar', cuenta: function () { return datos.galeria.fotos.length; } },
-    { id: 'resenas', n: 'Reseñas', i: 'estrella', cuenta: function () { return datos.resenas.opiniones.length; } },
-    { id: 'portada', n: 'Portada', i: 'pantalla' },
-    { id: 'horaspunta', n: 'Horas punta', i: 'grafico' },
-    { id: 'contacto', n: 'Contacto', i: 'telefono' },
-    { id: 'seo', n: 'SEO', i: 'lupa' },
-    { id: 'acceso', n: 'Acceso', i: 'candado' }
+    { grupo: 'Ajustes' },
+    { id: 'publicacion', n: 'Publicación', i: 'candado' }
   ];
+  var OPERACION = { publicacion: 1 };
 
   function pintaPanel() {
     hueco.innerHTML =
@@ -566,11 +305,13 @@
             '<span>Panel</span>' +
           '</div>' +
           '<span class="panel__estado" id="pn-estado"' + (sucio ? ' data-sucio="true"' : '') + '>' +
-            '<i></i><span>' + (sucio ? 'Sin publicar' : 'Todo publicado') + '</span></span>' +
-          '<button class="boton boton--fantasma boton--pequeno" type="button" id="pn-ver">' +
-            icono('lupa', 16) + ' Ver la web</button>' +
-          '<button class="boton boton--pequeno" type="button" id="pn-publicar">' +
-            icono('guardar', 16) + ' Publicar</button>' +
+            '<i></i><span>' + (sucio ? 'Web: cambios sin publicar' : 'Web: todo publicado') + '</span></span>' +
+          '<button class="boton boton--fantasma boton--pequeno p-barra-btn" type="button" id="pn-ver" aria-label="Ver la web">' +
+            icono('pantalla', 16) + '<span class="p-solo-ancho">Ver la web</span></button>' +
+          '<button class="boton boton--pequeno p-publicar" type="button" id="pn-publicar">' +
+            icono('guardar', 16) + '<span>Publicar</span></button>' +
+          '<button class="boton boton--fantasma boton--pequeno p-barra-btn" type="button" id="pn-salir" aria-label="Salir">' +
+            icono('salir', 16) + '<span class="p-solo-ancho">Salir</span></button>' +
         '</div>' +
       '</div>' +
 
@@ -581,16 +322,24 @@
         '</div>' +
       '</div>' +
 
+      '<nav class="p-tabs" id="pn-tabs" aria-label="Secciones"></nav>' +
       dialogoPublicar();
 
     document.getElementById('pn-ver').addEventListener('click', function () {
-      window.open(R('/index.html'), '_blank', 'noopener');
+      abrirVisor((window.__PANEL__ && window.__PANEL__.web) || R('/index.html'));
     });
     document.getElementById('pn-publicar').addEventListener('click', abrePublicar);
-    document.getElementById('pn-nav').addEventListener('click', function (e) {
-      var b = e.target.closest('[data-va]');
-      if (!b) return;
-      irA(b.getAttribute('data-va'));
+    document.getElementById('pn-salir').addEventListener('click', function () {
+      if (sucio && !confirm('Tienes cambios de la web sin publicar. Se quedan guardados en este ' +
+        'dispositivo. ¿Salir igualmente?')) return;
+      G.salir().then(function () { pideAcceso(); });
+    });
+    ['pn-nav', 'pn-tabs'].forEach(function (id) {
+      document.getElementById(id).addEventListener('click', function (e) {
+        var b = e.target.closest('[data-va]');
+        if (!b) return;
+        irA(b.getAttribute('data-va'));
+      });
     });
     montaPublicar();
     pintaNav();
@@ -608,16 +357,36 @@
 
   function irA(id) {
     seccion = id; indice = 0; filtro = '';
+    if (history.replaceState) history.replaceState(null, '', '#' + id);
     pintaNav(); pintaZona();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
+  /* Móvil: las mismas secciones, en pestañas abajo, al alcance del pulgar */
+  var NOMBRE_CORTO = { clases: 'Actividad.', publicacion: 'Ajustes' };
+  function pintaTabs() {
+    var tabs = document.getElementById('pn-tabs');
+    if (!tabs) return;
+    tabs.innerHTML = NAV.filter(function (x) { return !x.grupo; }).map(function (x) {
+      return '<button type="button" data-va="' + x.id + '"' + (seccion === x.id ? ' aria-current="true"' : '') + '>' +
+        '<span class="p-tabs__ico">' + icono(x.i, 20) + '</span>' +
+        esc(x.id === 'clases' ? 'Actividades' : NOMBRE_CORTO[x.id] || x.n) + '</button>';
+    }).join('');
+  }
+
   function pintaNav() {
-    document.getElementById('pn-nav').innerHTML = NAV.map(function (x) {
+    pintaTabs();
+    var nav = document.getElementById('pn-nav');
+    if (!nav) return;
+    nav.innerHTML = NAV.map(function (x) {
+      if (x.grupo) return '<p class="p-nav-grupo">' + esc(x.grupo) + '</p>';
       var n = x.cuenta ? x.cuenta() : null;
+      var a = x.aviso ? x.aviso() : null;
       return '<button type="button" data-va="' + x.id + '"' +
         (seccion === x.id ? ' aria-current="true"' : '') + '>' +
-        icono(x.i, 17) + x.n + (n != null ? '<b>' + n + '</b>' : '') + '</button>';
+        icono(x.i, 17) + x.n +
+        (a ? '<b class="p-aviso' + (x.fuerte ? ' p-aviso--fuerte' : '') + '">' + a + '</b>'
+           : n != null ? '<b>' + n + '</b>' : '') + '</button>';
     }).join('');
   }
 
@@ -625,87 +394,163 @@
     /* Cambiamos el nodo entero, no sólo su contenido: así los oyentes de la
        sección anterior se van con él y no se acumulan al navegar. */
     var viejo = document.getElementById('pn-zona');
+    if (!viejo) return;
     var z = document.createElement('div');
     z.id = 'pn-zona';
     viejo.replaceWith(z);
 
-    if (seccion === 'inicio') { z.innerHTML = vistaInicio(); montaInicio(); return; }
+    if (OPERACION[seccion]) { z.innerHTML = VISTAS_OP[seccion](); montaOperacion(z); return; }
     if (seccion === 'horarios') { z.innerHTML = vistaHorarios(); montaHorarios(); return; }
     if (COLECCIONES[seccion]) { z.innerHTML = vistaColeccion(); montaColeccion(); return; }
     if (BLOQUES[seccion]) { z.innerHTML = vistaBloque(); enganchaCampos(z); return; }
   }
 
-  /* ================================================================ REPASO */
-  function vistaInicio() {
-    var faltan = PENDIENTES.filter(function (p) { return !p.hecho(); });
-    return '<div class="panel__titulo">' +
-        '<h2>Repaso</h2>' +
-        '<p>Lo que conviene tener resuelto antes de que la web salga a producción. ' +
-          'Cada punto lleva a la sección donde se arregla.</p>' +
-      '</div>' +
+  /* ============================================================ PUBLICACIÓN */
+  function titulo(t, p, extra) {
+    return '<div class="panel__titulo p-titulo-acc"><div><h2>' + esc(t) + '</h2>' +
+      (p ? '<p>' + p + '</p>' : '') + '</div>' + (extra || '') + '</div>';
+  }
 
+  /* ----- Publicación: Vercel, historial y cuenta ----- */
+  function vistaPublicacion() {
+    var e = G.estado();
+    var f = function (ts) { return ts ? new Date(ts).toLocaleString('es-ES', { dateStyle: 'long', timeStyle: 'short' }) : '—'; };
+    return titulo('Publicación', 'Cómo llegan a la web los cambios de contenido, y cómo volver atrás.') +
       '<div class="detalle__caja" style="margin-bottom:var(--e-5)">' +
-        '<h3 style="font-size:var(--t-1);margin-bottom:var(--e-4)">' +
-          (faltan.length
-            ? 'Quedan ' + faltan.length + ' cosas por confirmar'
-            : 'Todo confirmado, se puede publicar') + '</h3>' +
-        PENDIENTES.map(function (p) {
-          var ok = p.hecho();
-          return '<div class="pendiente" data-hecho="' + ok + '">' +
-            '<span class="pendiente__punto"></span>' +
-            '<span class="pendiente__txt"><b>' + esc(p.t) + '</b>' +
-              '<span>' + esc(p.d) + '</span></span>' +
-            (ok ? '' : '<button type="button" data-va="' + esc(p.va) + '">Arreglarlo</button>') +
-          '</div>';
-        }).join('') +
-      '</div>' +
-
-      '<div class="detalle__caja" style="margin-bottom:var(--e-5)">' +
-        '<h3 style="font-size:var(--t-1);margin-bottom:var(--e-4)">Cómo va el contenido</h3>' +
-        '<div class="numeros">' +
-          '<div class="numero"><b>' + datos.clases.length + '</b><span>clases, ' +
-            datos.clases.filter(function (c) { return c.destacada; }).length + ' en portada</span></div>' +
-          '<div class="numero"><b>' + datos.tarifas.planes.length + '</b><span>cuotas, ' +
-            datos.tarifas.planes.filter(function (p) { return p.precioAntes; }).length +
-            ' con oferta</span></div>' +
-          '<div class="numero"><b>' + datos.agenda.horario.length + '</b><span>clases a la semana</span></div>' +
-          '<div class="numero"><b>' +
-            datos.resenas.opiniones.filter(function (o) { return o.publicar !== false; }).length +
-            '</b><span>reseñas publicadas</span></div>' +
+        '<div class="detalle__grupo"><h4>Estado</h4>' +
+          '<div class="numeros">' +
+            '<div class="numero"><b style="font-size:var(--t-1)">' + esc(f(e.actualizado)) + '</b><span>último cambio guardado</span></div>' +
+            '<div class="numero"><b style="font-size:var(--t-1)">' + esc(f(e.publicado)) + '</b><span>última vez que se pidió a Vercel reconstruir</span></div>' +
+          '</div>' +
+          (sucio ? '<p class="campo__ayuda" style="margin-top:var(--e-3)">Tienes cambios sin publicar en este dispositivo.</p>' : '') +
+        '</div>' +
+        '<div class="detalle__grupo"><h4>Reconstrucción automática (Vercel)</h4>' +
+          '<div class="detalle__campos"><div class="campo ancho">' +
+            '<div class="campo__cabecera"><label for="pn-hook">Deploy Hook</label></div>' +
+            '<input type="url" id="pn-hook" placeholder="https://api.vercel.com/v1/integrations/deploy/…" value="' + esc(e.hook) + '">' +
+            '<p class="campo__ayuda">Vercel → proyecto de la web → Settings → Git → Deploy Hooks → crear uno ' +
+              'para la rama <code>main</code> y pegar aquí la dirección. Con ella, «Publicar» actualiza la web sola. ' +
+              'Es secreta: solo la ve quien administra.</p>' +
+          '</div></div>' +
+          '<p><button class="boton boton--pequeno" type="button" data-op="guardar-hook">Guardar</button></p>' +
         '</div>' +
       '</div>' +
 
-      '<div class="repaso">' +
-        '<div class="repaso__ficha">' +
-          '<h3>' + icono('guardar', 20) + 'Cómo se publica</h3>' +
-          '<p style="color:var(--texto-suave);font-size:var(--t--1)">Los cambios se guardan solos ' +
-            'aquí, en tu navegador, pero la web pública no cambia hasta que subes el archivo. ' +
-            'Pulsa <b>Publicar</b> arriba (o ⌘S) y te explica los pasos.</p>' +
+      '<div class="detalle__caja" style="margin-bottom:var(--e-5)">' +
+        '<div class="detalle__grupo"><h4>Historial</h4>' +
+          '<p class="campo__ayuda" style="margin-bottom:var(--e-3)">Cada vez que publicas se guarda cómo estaba la web ' +
+            'antes (las 30 últimas). «Volver a esta» la publica otra vez tal cual.</p>' +
+          (e.versiones.length ? '<ul class="p-gente">' + e.versiones.map(function (v) {
+            return '<li><span>' + esc(f(v.guardada)) + '</span>' +
+              '<button class="boton boton--fantasma boton--pequeno" type="button" data-restaurar="' + v.id + '">Volver a esta</button></li>';
+          }).join('') + '</ul>' : '<p class="p-nada">Todavía no hay versiones anteriores.</p>') +
+          '<p style="margin-top:var(--e-4)"><button class="boton boton--fantasma boton--pequeno" type="button" data-op="copia">' +
+            icono('guardar', 15) + ' Descargar copia del contenido (manifest.js)</button></p>' +
         '</div>' +
-        '<div class="repaso__ficha">' +
-          '<h3>' + icono('aviso', 20) + 'Si te lías</h3>' +
-          '<p style="color:var(--texto-suave);font-size:var(--t--1)">Cada campo que cambies enseña ' +
-            'un «deshacer» al lado del nombre, que lo devuelve a como estaba publicado. Y abajo ' +
-            'tienes el botón para descartarlo todo de golpe.</p>' +
-          '<p style="margin-top:var(--e-4)"><button class="boton boton--fantasma boton--pequeno" ' +
-            'type="button" id="pn-descartar">Descartar todos mis cambios</button></p>' +
+      '</div>' +
+
+      '<div class="detalle__caja">' +
+        '<div class="detalle__grupo"><h4>Tu cuenta</h4>' +
+          '<p>Has entrado como <b id="pn-yo">' + esc(correo) + '</b>.</p>' +
+          '<p class="campo__ayuda">Para dar acceso a otra persona: en Supabase, Authentication → Users → ' +
+            'Add user (con «Auto Confirm User»), y añadir su correo a la tabla <code>admins</code>. ' +
+            'Una cuenta que no esté en <code>admins</code> no ve nada aunque tenga contraseña.</p>' +
         '</div>' +
       '</div>';
   }
 
-  function montaInicio() {
-    var z = document.getElementById('pn-zona');
+  var VISTAS_OP = { publicacion: vistaPublicacion };
+
+  /* Espera la respuesta del servidor: si va bien avisa; si no, lo dice. */
+  function hacer(promesa, ok, despues) {
+    document.body.classList.add('p-ocupado');
+    return Promise.resolve(promesa).then(function (r) {
+      document.body.classList.remove('p-ocupado');
+      if (r && r.error) { tostada(esc(r.error), 'mal'); return false; }
+      if (ok) tostada(typeof ok === 'function' ? ok(r) : ok);
+      if (despues) despues(r);
+      return true;
+    }, function () {
+      document.body.classList.remove('p-ocupado');
+      tostada('No se pudo guardar. ¿Hay conexión?', 'mal');
+      return false;
+    });
+  }
+
+  function montaOperacion(z) {
     z.addEventListener('click', function (e) {
-      var b = e.target.closest('[data-va]');
-      if (b) { irA(b.getAttribute('data-va')); return; }
-      if (e.target.closest('#pn-descartar')) {
-        if (!confirm('¿Seguro? Se pierde todo lo que hayas cambiado y no publicado.')) return;
-        P.almacen.borra(CLAVE_BORRADOR);
-        datos = clona(B); sucio = false;
-        pintaPanel();
+      var t = e.target.closest('button');
+      if (!t) return;
+      if (t.getAttribute('data-restaurar')) {
+        if (sucio && !confirm('Tienes cambios sin publicar: se perderán. ¿Seguir?')) return;
+        if (!confirm('¿Volver a publicar la web tal y como estaba en esta versión?')) return;
+        hacer(G.restaurar(+t.getAttribute('data-restaurar')), function (r) {
+          return r.reconstruye ? 'Versión recuperada. <b>La web se actualiza en un minuto.</b>' : 'Versión recuperada y guardada.';
+        }, function () { recargaContenido(true); pintaNav(); pintaZona(); });
+        return;
+      }
+      switch (t.getAttribute('data-op')) {
+        case 'guardar-hook':
+          hacer(G.guardarHook(document.getElementById('pn-hook').value), 'Guardado. <b>«Publicar» ya actualiza la web sola.</b>');
+          break;
+        case 'copia': descarga(); break;
       }
     });
   }
+
+  /* ----- Avisos flotantes ----- */
+  function tostada(html, tipo) {
+    var caja = document.querySelector('[data-tostadas]');
+    if (!caja) return;
+    var t = document.createElement('div');
+    t.className = 'p-tostada' + (tipo ? ' p-tostada--' + tipo : '');
+    t.innerHTML = '<i>' + (tipo === 'mal' ? '!' : '✓') + '</i><span>' + html + '</span>';
+    caja.appendChild(t);
+    setTimeout(function () { t.classList.add('fuera'); }, 4600);
+    setTimeout(function () { t.remove(); }, 5000);
+  }
+
+  /* ----- «Ver la web» sin salir del panel ----- */
+  var visor = document.querySelector('[data-visor]'), marco = document.querySelector('[data-visor-marco]');
+  function abrirVisor(href) {
+    var destino = new URL(href, location.href).href;
+    if (marco.getAttribute('src') !== destino) marco.setAttribute('src', destino);
+    document.querySelector('[data-visor-fuera]').href = destino;
+    visor.hidden = false;
+    document.documentElement.classList.add('p-visor-abierto');
+    if (history.pushState) history.pushState({ visor: 1 }, '', location.href);
+    document.querySelector('[data-cerrar-visor]').focus();
+  }
+  function cerrarVisor(desdeHistoria) {
+    if (visor.hidden) return;
+    visor.hidden = true;
+    document.documentElement.classList.remove('p-visor-abierto');
+    if (!desdeHistoria && history.state && history.state.visor) history.back();
+  }
+  window.addEventListener('popstate', function () { cerrarVisor(true); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !visor.hidden) cerrarVisor(); });
+  document.querySelector('[data-cerrar-visor]').addEventListener('click', function () { cerrarVisor(); });
+
+  /* ----- Si otra persona publica desde otro dispositivo, lo publicado cambia ----- */
+  var publicadoVisto = null;
+  function recargaContenido(forzar) {
+    var e = G.estado();
+    if (!e.contenido) return;
+    if (!forzar && e.actualizado === publicadoVisto) return;
+    publicadoVisto = e.actualizado;
+    reemplazaB(e.contenido);
+    if (forzar || !sucio) {
+      datos = clona(B); sucio = false; P.almacen.borra(CLAVE_BORRADOR);
+      pintaEstado();
+    }
+  }
+  if (G && G.activo) G.alCambiar(function () {
+    if (!document.getElementById('pn-zona')) return;
+    var antes = publicadoVisto;
+    recargaContenido(false);
+    if (antes !== publicadoVisto && !sucio) { pintaNav(); pintaZona(); }
+    else if (OPERACION[seccion]) pintaZona();
+  });
 
   /* =========================================================== COLECCIONES */
   function vistaColeccion() {
@@ -823,6 +668,11 @@
       if (!b) return;
       indice = +b.getAttribute('data-i');
       refrescaColeccion();
+      /* en el móvil la ficha queda debajo de la lista: se baja hasta ella */
+      var det = document.getElementById('pn-detalle');
+      if (det && det.getBoundingClientRect().top > document.getElementById('pn-lista').getBoundingClientRect().bottom) {
+        det.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
     });
 
     z.addEventListener('click', function (e) {
@@ -1017,7 +867,7 @@
         pon(ruta, original === undefined ? '' : clona({ v: original }).v);
         marcaSucio();
         if (COLECCIONES[seccion]) refrescaColeccion();
-        else { var z = document.getElementById('pn-zona'); z.innerHTML = vistaBloque(); enganchaCampos(z); }
+        else pintaZona();
       });
     });
 
@@ -1051,32 +901,28 @@
   }
 
   /* ==================================================== IMPORTAR IMÁGENES */
-  /* No hay servidor donde subir archivos, así que el trabajo lo hace el propio
-     navegador: recorta la foto al tamaño exacto que usa esa ficha, la convierte
-     a WebP y a JPG de respaldo, y te descarga los dos con el nombre correcto.
-     Sólo queda copiarlos a assets/img/. La ruta del manifiesto se pone sola. */
+  /* El navegador recorta la foto al tamaño exacto que usa esa ficha, la
+     convierte a WebP y a JPG de respaldo, y sube los dos al almacén de fotos
+     de la base de datos. La dirección se pone sola en la ficha: al publicar,
+     la web ya la usa. No hay que copiar nada a ningún sitio. */
 
   var MEDIDAS = {
-    clases: [880, 660], equipo: [640, 800], centros: [760, 570],
-    galeria: [1200, 800], portada: [1600, 900]
+    clases: [880, 660]
   };
   function medidaDe(s) { return MEDIDAS[s] || [880, 660]; }
 
-  /* Vistas previas de lo recién importado: viven mientras no recargues */
-  var previas = {};
-  function previa(ruta) { return previas[ruta] || R(ruta || ''); }
+  function previa(ruta) { return R(ruta || ''); }
 
-  /* Archivos que el usuario todavía no ha copiado a la carpeta */
-  var porCopiar = [];
 
   function nombreArchivo(rutaActual, item) {
     var base = '';
-    var m = String(rutaActual || '').match(/\/assets\/img\/(.+?)\.(webp|jpg|jpeg|png)$/i);
+    var m = String(rutaActual || '').match(/\/assets\/img\/(.+?)\.(webp|jpg|jpeg|png)$/i) ||
+      /* foto ya subida al almacén: se le quita la marca de tiempo del final */
+      String(rutaActual || '').match(/\/storage\/v1\/object\/public\/web\/img\/(.+?)-[a-z0-9]{8}\.(webp|jpg)$/i);
     if (m) base = m[1];
     else {
       base = P.normaliza((item && (item.id || item.nombre)) || 'imagen').replace(/\s+/g, '-');
-      base = (seccion === 'clases' ? 'clase-' : seccion === 'equipo' ? 'equipo-' :
-              seccion === 'centros' ? 'centro-' : 'foto-') + base;
+      base = (seccion === 'clases' ? 'clase-' : 'foto-') + base;
     }
     return base;
   }
@@ -1097,14 +943,6 @@
 
   function aBlob(lienzo, tipo, calidad) {
     return new Promise(function (r) { lienzo.toBlob(r, tipo, calidad); });
-  }
-
-  function bajaBlob(blob, nombre) {
-    var a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = nombre;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
   }
 
   function importaFoto(caja, archivo) {
@@ -1140,28 +978,27 @@
             'Funciona igual, pesa algo más.');
         }
 
-        bajaBlob(webp, base + '.webp');
-        setTimeout(function () { bajaBlob(jpg, base + '.jpg'); }, 350);
-
-        /* ruta del WebP y, si la ficha lo tiene, la del JPG de respaldo */
-        var rutaWebp = '/assets/img/' + base + '.webp';
-        var rutaJpg = '/assets/img/' + base + '.jpg';
-        pon(ruta, rutaWebp);
-        previas[rutaWebp] = URL.createObjectURL(webp);
-        previas[rutaJpg] = previas[rutaWebp];
-
-        var par = caja.getAttribute('data-par');
-        if (par) {
-          var rutaPar = ruta.replace(/\.[^.]+$/, '.' + par);
-          if (lee(datos, rutaPar) !== undefined) pon(rutaPar, rutaJpg);
-        }
-
-        apunta(base + '.webp', Math.round(webp.size / 1024));
-        apunta(base + '.jpg', Math.round(jpg.size / 1024));
-
-        marcaSucio();
-        if (COLECCIONES[seccion]) refrescaColeccion(); else pintaZona();
-        avisaCopiar();
+        /* nombre único: así nunca se sirve una versión vieja desde la caché */
+        var nombre = base + '-' + Date.now().toString(36);
+        vista.setAttribute('data-cargando', 'true');
+        Promise.all([
+          G.subirFoto(webp, nombre + (webp === jpg ? '.jpg' : '.webp')),
+          webp === jpg ? Promise.resolve(null) : G.subirFoto(jpg, nombre + '.jpg')
+        ]).then(function (r) {
+          vista.removeAttribute('data-cargando');
+          var fallo = r.filter(function (x) { return x && x.error; })[0];
+          if (fallo) { tostada(esc(fallo.error), 'mal'); return; }
+          var urlWebp = r[0].url, urlJpg = r[1] ? r[1].url : r[0].url;
+          pon(ruta, urlWebp);
+          var par = caja.getAttribute('data-par');
+          if (par) {
+            var rutaPar = ruta.replace(/\.[^.]+$/, '.' + par);
+            if (lee(datos, rutaPar) !== undefined) pon(rutaPar, urlJpg);
+          }
+          marcaSucio();
+          if (COLECCIONES[seccion]) refrescaColeccion(); else pintaZona();
+          tostada('Foto subida (' + Math.round(webp.size / 1024) + ' KB). <b>Sale en la web al publicar.</b>');
+        });
       });
     };
     img.onerror = function () {
@@ -1170,32 +1007,6 @@
       alert('No se ha podido leer esa imagen. Prueba a exportarla como JPG o PNG.');
     };
     img.src = url;
-  }
-
-  function apunta(nombre, kb) {
-    porCopiar = porCopiar.filter(function (x) { return x.n !== nombre; });
-    porCopiar.push({ n: nombre, kb: kb });
-  }
-
-  /* Recordatorio flotante para que no se quede a medias */
-  function avisaCopiar() {
-    var zona = document.getElementById('pn-zona');
-    if (!zona || !porCopiar.length) return;
-    var previo = zona.querySelector('.porcopiar');
-    var html =
-      '<div class="porcopiar">' + icono('guardar', 18) +
-        '<div><b>' + porCopiar.length + ' archivo' + (porCopiar.length === 1 ? '' : 's') +
-          ' descargado' + (porCopiar.length === 1 ? '' : 's') + ': cópialo' +
-          (porCopiar.length === 1 ? '' : 's') + ' a <code>assets/img/</code></b>' +
-          '<span>Están en tu carpeta de Descargas. La ruta ya está puesta en la ficha; ' +
-          'sólo falta mover los archivos.</span>' +
-          '<ul>' + porCopiar.map(function (f) {
-            return '<li><code>' + esc(f.n) + '</code> · ' + f.kb + ' KB</li>';
-          }).join('') + '</ul>' +
-        '</div>' +
-      '</div>';
-    if (previo) previo.outerHTML = html;
-    else zona.insertAdjacentHTML('afterbegin', html);
   }
 
   function montaImportadores(ctx) {
@@ -1340,33 +1151,25 @@
         '<div class="publicar__caja">' +
           '<h2 id="pn-dlg-t">Publicar los cambios</h2>' +
           '<p id="pn-dlg-resumen"></p>' +
-          '<div id="pn-dlg-pendientes"></div>' +
           '<ol class="receta">' +
-            '<li><b>Descarga el archivo</b><span>Se te bajará un <code>manifest.js</code> con todo lo ' +
-              'que has cambiado.</span></li>' +
-            '<li><b>Súbelo a la carpeta <code>lib/</code></b><span>Por FTP, sustituyendo el ' +
-              '<code>lib/manifest.js</code> que ya hay. O arrastrándolo en el panel de tu alojamiento.</span></li>' +
-            '<li><b>Recarga la web</b><span>Los cambios salen al instante. Si no los ves, recarga ' +
-              'forzando (⌘⇧R).</span></li>' +
+            '<li><b>Se guarda en la base de datos</b><span>Y la versión anterior queda en el historial, ' +
+              'por si hay que volver atrás.</span></li>' +
+            '<li><b>La web se reconstruye sola</b><span>Tarda alrededor de un minuto. Si no ves el cambio, ' +
+              'recarga la página.</span></li>' +
           '</ol>' +
           '<div style="display:grid;gap:var(--e-3)">' +
-            '<button class="boton boton--ancho" type="button" id="pn-bajar">' +
-              icono('guardar', 18) + ' Descargar manifest.js</button>' +
-            '<button class="boton boton--fantasma boton--ancho" type="button" id="pn-github">' +
-              icono('github', 18) + ' Descargar y abrir GitHub</button>' +
+            '<button class="boton boton--ancho" type="button" id="pn-publicar-ya">' +
+              icono('guardar', 18) + ' Publicar ahora</button>' +
             '<button class="boton boton--fantasma boton--ancho" type="button" id="pn-cerrar-dlg">' +
               'Seguir editando</button>' +
           '</div>' +
-          '<p class="letra-pequena" style="margin-top:var(--e-5)">Mientras no subas el archivo, la ' +
-            'web pública sigue como estaba. Tus cambios no se pierden: se quedan guardados aquí.</p>' +
         '</div>' +
       '</div>';
   }
 
   function montaPublicar() {
     var dlg = document.getElementById('pn-dialogo');
-    document.getElementById('pn-bajar').addEventListener('click', descarga);
-    document.getElementById('pn-github').addEventListener('click', aGitHub);
+    document.getElementById('pn-publicar-ya').addEventListener('click', publicaYa);
     document.getElementById('pn-cerrar-dlg').addEventListener('click', cierraPublicar);
     dlg.addEventListener('click', function (e) { if (e.target === dlg) cierraPublicar(); });
     document.addEventListener('keydown', function (e) {
@@ -1378,21 +1181,13 @@
     var dlg = document.getElementById('pn-dialogo');
     if (!dlg) return;
     var cambios = cuentaCambios();
-    var pend = document.getElementById('pn-dlg-pendientes');
-    pend.innerHTML = porCopiar.length
-      ? '<div class="porcopiar" style="margin:0 0 var(--e-5)">' + icono('aviso', 18) +
-        '<div><b>No olvides copiar ' + porCopiar.length + ' imagen' +
-        (porCopiar.length === 1 ? '' : 'es') + ' a assets/img/</b>' +
-        '<ul>' + porCopiar.map(function (f) {
-          return '<li><code>' + esc(f.n) + '</code></li>'; }).join('') + '</ul></div></div>'
-      : '';
     document.getElementById('pn-dlg-resumen').textContent = cambios
-      ? 'Has cambiado ' + cambios + (cambios === 1 ? ' cosa' : ' cosas') +
-        '. Tres pasos y está publicado.'
-      : 'No has cambiado nada todavía, pero puedes descargar el archivo igualmente.';
+      ? 'Has cambiado ' + cambios + (cambios === 1 ? ' cosa' : ' cosas') + ' en la web.'
+      : 'No has cambiado nada en la web todavía.';
+    document.getElementById('pn-publicar-ya').disabled = !cambios;
     dlg.setAttribute('data-abierto', 'true');
     document.body.classList.add('sin-scroll');
-    document.getElementById('pn-bajar').focus();
+    document.getElementById(cambios ? 'pn-publicar-ya' : 'pn-cerrar-dlg').focus();
   }
   function cierraPublicar() {
     var dlg = document.getElementById('pn-dialogo');
@@ -1401,7 +1196,33 @@
     document.body.classList.remove('sin-scroll');
   }
 
-  /* Cuántas hojas del árbol difieren del manifiesto publicado */
+  function publicaYa() {
+    var b = document.getElementById('pn-publicar-ya');
+    b.disabled = true; b.setAttribute('data-cargando', 'true');
+    var copia = clona(datos);
+    hacer(G.publicar(copia), function (r) {
+      return r.reconstruye
+        ? 'Publicado. <b>La web se actualiza en un minuto.</b>'
+        : 'Guardado en la base de datos. <b>Falta el Deploy Hook de Vercel</b> para que la web se actualice sola (Publicación).';
+    }, function () {
+      reemplazaB(copia);
+      publicadoVisto = G.estado().actualizado;
+      /* si se ha seguido escribiendo mientras se publicaba, eso sigue como borrador */
+      if (JSON.stringify(datos) === JSON.stringify(copia)) { sucio = false; P.almacen.borra(CLAVE_BORRADOR); }
+      cierraPublicar();
+      pintaEstado();
+      if (OPERACION[seccion]) pintaZona();
+    }).then(function () { b.disabled = false; b.removeAttribute('data-cargando'); });
+  }
+
+  function pintaEstado() {
+    var e = document.getElementById('pn-estado');
+    if (!e) return;
+    if (sucio) e.setAttribute('data-sucio', 'true'); else e.removeAttribute('data-sucio');
+    e.querySelector('span').textContent = sucio ? 'Web: cambios sin publicar' : 'Web: todo publicado';
+  }
+
+  /* Cuántas hojas del árbol difieren del contenido publicado */
   function cuentaCambios() {
     var n = 0;
     (function anda(a, b) {
@@ -1418,16 +1239,18 @@
     return n;
   }
 
+  /* Copia de seguridad: el contenido publicado como lib/manifest.js */
   function comoArchivo() {
     return '/* =============================================================================\n' +
       '   GIMNASIOS XTREME BURGOS — MANIFIESTO DE MARCA\n' +
       '   -----------------------------------------------------------------------------\n' +
-      '   Generado desde el panel de gestión el ' +
+      '   Copia descargada desde el panel el ' +
       new Date().toLocaleString('es-ES', { dateStyle: 'long', timeStyle: 'short' }) + '.\n' +
-      '   Éste es el ÚNICO archivo que hay que tocar para cambiar el contenido del sitio.\n' +
+      '   El contenido de verdad vive en la base de datos; al publicar, la web se\n' +
+      '   construye con él. Este archivo es solo el respaldo del repositorio.\n' +
       '   No pongas claves ni secretos aquí: este archivo viaja al navegador.\n' +
       '   ========================================================================== */\n\n' +
-      'window.__BRAND__ = ' + JSON.stringify(datos, null, 2) + ';\n';
+      'window.__BRAND__ = ' + JSON.stringify(B, null, 2) + ';\n';
   }
 
   function descarga() {
@@ -1437,31 +1260,15 @@
     a.download = 'manifest.js';
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
-
-    var e = document.getElementById('pn-estado');
-    if (e) {
-      e.removeAttribute('data-sucio');
-      e.querySelector('span').textContent = 'Descargado · súbelo a lib/';
-    }
-  }
-
-  function aGitHub() {
-    var repo = String(datos.panel.repo || '').trim();
-    descarga();
-    if (!repo) {
-      alert('Para que este botón lleve a tu repositorio, ponlo en «Acceso → Repositorio de ' +
-        'GitHub» (por ejemplo: miusuario/xtreme-web).\n\n' +
-        'El archivo ya se te ha descargado: súbelo a lib/manifest.js.');
-      return;
-    }
-    window.open('https://github.com/' + repo + '/edit/main/lib/manifest.js', '_blank', 'noopener');
   }
 
   window.addEventListener('beforeunload', function (e) {
-    if (!sucio) return;
+    if (!sucio || !document.getElementById('pn-zona')) return;
     e.preventDefault(); e.returnValue = '';
   });
 
-  if (sessionStorage.getItem(CLAVE_SESION) === '1') pintaPanel();
-  else pideClave();
+  /* ---------------------------------------------------------------- arranque */
+  if (!G || !G.activo) { sinBase(); return; }
+  hueco.innerHTML = '<p class="p-cargando">Cargando…</p>';
+  G.sesionActual().then(function (si) { if (si) arranca(); else pideAcceso(); });
 })();

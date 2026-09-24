@@ -5,7 +5,8 @@
 (function () {
   'use strict';
 
-  var B = window.__BRAND__, P = window.XP, T = window.XT;
+  var B = window.__BRAND__, P = window.XP, T = window.XT, D = window.XD;
+  var enBase = !!(D && D.activo);
   var hueco = document.querySelector('[data-reserva]');
   if (!B || !P || !hueco) return;
 
@@ -184,14 +185,17 @@
     caja.innerHTML = franjas.map(function (h) {
       var p = h.split(':');
       var pasada = esHoy && (+p[0] * 60 + +p[1]) < ahoraMin + 60;
+      var cogida = enBase && D.huecoCogido(elegido.centro, elegido.fecha, h);
       return '<button class="hora" type="button" data-hora="' + esc(h) + '"' +
-        (pasada ? ' disabled' : '') +
+        (pasada || cogida ? ' disabled' : '') +
+        (cogida ? ' title="Ya reservada" aria-label="' + esc(h) + ', ya reservada"' : '') +
         ' aria-pressed="' + (elegido.hora === h) + '">' + esc(h) + '</button>';
     }).join('');
 
     if (!franjas.filter(function (h) {
       var p = h.split(':');
-      return !(esHoy && (+p[0] * 60 + +p[1]) < ahoraMin + 60);
+      return !(esHoy && (+p[0] * 60 + +p[1]) < ahoraMin + 60) &&
+        !(enBase && D.huecoCogido(elegido.centro, elegido.fecha, h));
     }).length) {
       caja.innerHTML = '<p class="campo__ayuda">Ya no quedan horas este día. Prueba con el siguiente.</p>';
     }
@@ -232,7 +236,11 @@
   /* -------------------------------------------------------------- eventos */
   hueco.addEventListener('change', function (e) {
     if (e.target.name === 'servicio') { elegido.servicio = e.target.value; pintaResumen(); }
-    if (e.target.name === 'centro') { elegido.centro = e.target.value; pintaResumen(); }
+    if (e.target.name === 'centro') {
+      elegido.centro = e.target.value;
+      if (enBase && elegido.hora && D.huecoCogido(elegido.centro, elegido.fecha, elegido.hora)) elegido.hora = '';
+      pintaHoras(); pintaResumen();
+    }
   });
 
   hueco.addEventListener('click', function (e) {
@@ -307,13 +315,25 @@
     var boton = document.getElementById('rv-enviar');
     boton.setAttribute('data-cargando', 'true');
 
-    fetch(R('/api/reserva'), {
-      method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(datos)
-    }).then(function (r) {
-      if (!r.ok) throw new Error('respuesta ' + r.status);
-      return r.json().catch(function () { return {}; });
-    }).then(function () {
+    /* Con base de datos, la cita se guarda allí (y sale en el panel al
+       momento); el correo de aviso es un extra que puede fallar sin más. */
+    function porCorreo() {
+      return fetch(R('/api/reserva'), {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(datos)
+      }).then(function (r) {
+        if (!r.ok) throw new Error('respuesta ' + r.status);
+        return r.json().catch(function () { return {}; });
+      });
+    }
+    var envio = !enBase ? porCorreo() : D.crearCita(datos).then(function (r) {
+      if (r.ok) { porCorreo().catch(function () {}); return r; }
+      if (r.red) return porCorreo();
+      /* La base dice que no (hora cogida, datos mal…): se explica y se deja corregir */
+      var fallo = new Error(r.error); fallo.explicado = true; throw fallo;
+    });
+
+    envio.then(function () {
       boton.removeAttribute('data-cargando');
       exito.querySelector('span').textContent =
         'Cita confirmada: ' + datos.servicio + ' el ' + P.fechaLarga(P.deIso(datos.fecha)) +
@@ -322,8 +342,17 @@
       exito.scrollIntoView({ block: 'center', behavior: 'smooth' });
       if (T) T.mide('reserva_cita', { servicio: datos.servicioId, centro: datos.centroId });
       form.reset();
-    }).catch(function () {
+      elegido.hora = '';
+      pintaHoras(); pintaResumen();
+    }).catch(function (fallo) {
       boton.removeAttribute('data-cargando');
+      if (fallo && fallo.explicado) {
+        error.querySelector('span').textContent = fallo.message;
+        error.hidden = false;
+        error.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        if (enBase) D.vigilaHuecos(Rs.diasAntelacionMax || 45).then(function () { pintaHoras(); pintaResumen(); });
+        return;
+      }
       var asunto = encodeURIComponent('Cita: ' + datos.servicio + ' · ' + datos.fecha + ' ' + datos.hora);
       var cuerpo = encodeURIComponent(
         'Quiero reservar ' + datos.servicio + '\nCentro: ' + datos.centro +
@@ -344,5 +373,13 @@
   pintaCalendario();
   pintaHoras();
   pintaResumen();
+  /* Horas ya cogidas por otros: se tachan y se refrescan solas */
+  if (enBase) {
+    D.alCambiar(function () {
+      if (elegido.hora && D.huecoCogido(elegido.centro, elegido.fecha, elegido.hora)) elegido.hora = '';
+      pintaHoras(); pintaResumen();
+    });
+    D.vigilaHuecos(Rs.diasAntelacionMax || 45);
+  }
   if (T) T.montaApariciones();
 })();
